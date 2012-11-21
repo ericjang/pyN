@@ -2,11 +2,15 @@
 Base Population class.
 This class does nothing by default (will not work with simulator). Must be subclassed.
 '''
-from synapse import generate_synapses
+import os,sys
+parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0,parentdir)
+
+from pyN.synapse import generate_synapses
 import numpy as np
 import ipdb as pdb
 
-class Population():
+class Base_Population():
   def __init__(self, name, N=10, synapses=None, mode="Excitatory", tau_psc=5.0, connectivity=None, spike_delta=100, v_rest=-70):
     '''
     non-changing variables
