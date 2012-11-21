@@ -7,7 +7,7 @@ Author: Eric Jang
 '''
 
 import numpy as np
-import pylab as py
+import matplotlib.pyplot as plt
 import ipdb as pdb
 from datetime import datetime
 import pickle
@@ -36,7 +36,6 @@ class Population():
     self.b          = b          # Spike-triggered adaptation in nA
     self.delta_T    = delta_T    # Slope factor in mV
     self.tau_w      = tau_w      # Adaptation time constant in ms
-    self.tau_psc    = tau_psc    # post synaptic current filter time constant
     self.v_thresh   = v_thresh   # Spike initiation threshold in mV
     self.e_rev_E    = e_rev_E    # Excitatory reversal potential in mV.
     self.tau_syn_E  = tau_syn_E  # Decay time constant of excitatory synaptic conductance in ms.
@@ -50,9 +49,11 @@ class Population():
     self.v = np.ones(N) * v_rest
     self.ge = np.ones(N)
     self.gi = np.ones(N)
+    self.gl = 0.9#? leak conductance - will this work?
     self.w = np.ones(N)
     self.prev_spiked = (np.zeros(N) == 1) #boolean array
     self.last_spike = np.zeros(N)
+    self.spike_raster = np.zeros(N) * np.nan
     '''
     configure synapses
     '''
@@ -78,9 +79,9 @@ class Population():
     - e.g. if a neuron fires at time 1 but not at time 2, the decaying current from time 1 will still be applied
     '''
     t[np.nonzero(t < 0)] = 0
-    I = t*np.exp(-t/self.tau_psc)
-    if self.mode == "Excitatory": return I
-    elif self.mode == "Inhibitory": return -I
+    #in order for a good modicum of current to even be applied, t must be negative!
+    if self.mode == "Excitatory": return t*np.exp(-t/self.tau_syn_E)
+    elif self.mode == "Inhibitory": return -t*np.exp(-t/self.tau_syn_I)
 
 def generate_synapses(pre_population, post_population, connectivity="sparse-random"):
   '''
@@ -106,7 +107,7 @@ def generate_synapses(pre_population, post_population, connectivity="sparse-rand
     #shortcut for setting up sparse connectivity with random weights
     #TODO : need to adjust scaling of sparsity - exponential distribution? logarithms?
     synapses = np.random.random([M,N])
-    syn_filter = (synapses < float(5)/N)
+    syn_filter = (np.random.random([M,N]) < 0.1)#randomly filter out 90% of synapses, so only a 10th have weights
     synapses *= syn_filter
   else:
     raise Exception("connectivity type not recognized! Check your spelling...")
@@ -204,50 +205,51 @@ class Network():
 
           #data files to write to
           v_dataFiles = {}
-          ge_dataFiles = {}
-          gi_dataFiles = {}
+          spike_dataFiles = {}
           w_dataFiles = {}
+          I_dataFiles = {}
 
 
           params_file = open('../data/' + now + '-' + 'experiment.pkl','w')
           for name, p in self.populations.items():
             params['populations'][name] = p.N
             #write I_inj to file right away (provided that stim exists)
-            with file('../data/' + now + '-' + name + '-' + 'stim' + '.txt', 'w') as outputfile:
-              np.savetxt(outputfile, p.I_inj)
+            with file('../data/' + now + '-' + name + '-' + 'stim', 'w') as outputfile:
+              np.savetxt(outputfile, p.I_inj, fmt='%-7.4f')
             #prep other files
-            v_dataFiles[name]  = '../data/' + now + '-' + name + '-' + 'v'  + '.txt'
-            ge_dataFiles[name] = '../data/' + now + '-' + name + '-' + 'ge' + '.txt'
-            gi_dataFiles[name] = '../data/' + now + '-' + name + '-' + 'gi' + '.txt'
-            w_dataFiles[name]  = '../data/' + now + '-' + name + '-' + 'w'  + '.txt'
+            v_dataFiles[name]  = '../data/' + now + '-' + name + '-' + 'v'
+            spike_dataFiles[name] = '../data/' + now + '-' + name + '-' + 'raster'
+            w_dataFiles[name]  = '../data/' + now + '-' + name + '-' + 'w'
+            I_dataFiles[name]  = '../data/' + now + '-' + name + '-' + 'I'
 
         pickle.dump(params, params_file)
         params_file.close()
         #run the simulation
         for i, t in enumerate(time_trace[1:],1):
-          print("%0.3f%% done..." % (float(i)/len(time_trace)))#make sure to run this in python3
+          print("%0.3f%% done... t=%d msec" % ((float(i)/len(time_trace)*100.0),t))#make sure to run this in python3
           #compute change in state variables for each population
           for name, p in self.populations.items():
             #if prev_spiked for a neuron, then it becomes v_reset
             p.v[np.nonzero(p.prev_spiked == True)] = p.v_reset
             #compute current input from neurons within population as well as neurons from other populations
-            p.I_proj = p.synapses.dot(p.Isyn(t - p.last_spike)) #intra-population currents
-
-            print '###############', i
-            print p.I_proj
+            #a better idea would have been to have rows be presynaptic and columns be postsynaptic. but this transpose scheme should work.
+            p.I_proj = np.transpose(np.transpose(p.synapses).dot(p.Isyn(t - p.last_spike))) #intra-population currents
             #add currents from other populations that project to p (interpopulation)
             for proj in p.receiver:
               proj_last_spike = self.populations[proj['from']].last_spike
-              p.I_proj += self.populations[proj['from']].Isyn(t-proj_last_spike).dot(proj['syn'])#unlike the neurdon example, I am using transposed version of connectivity matrix
+              #unlike the neurdon example, I am using transposed version of connectivity matrix. that was not a good idea
+              p.I_proj += np.transpose(np.transpose(proj['syn']).dot(self.populations[proj['from']].Isyn(t-proj_last_spike)))
             #compute deltas
-            dv  = (((p.v_rest-p.v) + p.delta_T*np.exp((p.v - p.v_thresh)/p.delta_T))/p.tau_m + (p.ge*(p.e_rev_E-p.v) + p.gi*(p.e_rev_I-p.v) + p.i_offset + p.I_inj[:,i] + p.I_proj - p.w)/p.cm) *dt
+            #dv  = (((p.v_rest-p.v) + p.delta_T*np.exp((p.v - p.v_thresh)/p.delta_T))/p.tau_m + (p.ge*(p.e_rev_E-p.v) + p.gi*(p.e_rev_I-p.v) + p.i_offset + p.I_inj[:,i] + p.I_proj - p.w)/p.cm) *dt
+            dv  = (((p.v_rest-p.v) + p.delta_T*np.exp((p.v - p.v_thresh)/p.delta_T))/p.tau_m + (p.i_offset + p.I_inj[:,i] + p.I_proj - p.w)/p.cm) *dt
             dge = -p.ge/p.tau_syn_E * dt
             dgi = -p.gi/p.tau_syn_I * dt
+            #dv = p.gl * ((p.delta_T*np.exp((p.v - p.v_thresh)/p.delta_T) - (p.v -p.v_rest)) - p.w + p.I_inj[:,i] + p.I_proj)/p.cm * dt
             dw  = (p.a*(p.v-p.v_rest) - p.w)/p.tau_w * dt
 
-            p.v += dv
             p.ge += dge
             p.gi += dgi
+            p.v += dv
             p.w += dw
 
             #detect spike thresholds
@@ -259,26 +261,27 @@ class Network():
             p.prev_spiked[spiked] = True
             p.prev_spiked[no_spike] = False
 
+            #for the raster
+            p.spike_status = np.zeros(p.N) * np.nan
+            p.spike_status[spiked] = spiked[0] + 1
+
+
           #save the data
           if (saveData):
             for name,p in self.populations.items():
               vfile = open(v_dataFiles[name], 'a')
-              gefile = open(ge_dataFiles[name], 'a')
-              gifile = open(gi_dataFiles[name], 'a')
               wfile = open(w_dataFiles[name], 'a')
-              vfile.write('# New slice\n')
-              gefile.write('# New slice\n')
-              gifile.write('# New slice\n')
-              wfile.write('# New slice\n')
+              Ifile = open(I_dataFiles[name], 'a')
+              spikefile = open(spike_dataFiles[name],'a')
               np.savetxt(vfile,p.v,fmt='%-7.4f')
-              np.savetxt(gefile,p.ge,fmt='%-7.4f')
-              np.savetxt(gifile,p.gi,fmt='%-7.4f')
               np.savetxt(wfile,p.w,fmt='%-7.4f')
+              np.savetxt(Ifile,p.I_proj,fmt='%-7.4f')
+              np.savetxt(spikefile,p.spike_status,fmt='%-7.4f')
               #close the files!
               vfile.close()
-              gefile.close()
-              gifile.close()
               wfile.close()
+              Ifile.close()
+              spikefile.close()
         #simulation done.
         #can only plot data if saveData is true - simulation only stores previous and current state variables.
         if (saveData):
@@ -297,59 +300,75 @@ def load_data(params):
 
   #rebuild the time trace (for x axis plotting)
   time_trace = np.arange(0,params['T']+params['dt'],params['dt'])
-
   #display the trace for each population
+  numpop = len(params['populations'].keys())#number of populations
+  f, axarr = plt.subplots(nrows=4, ncols=numpop)
   i = 0
   for name, N in params['populations'].items():
-    v_trace  = np.loadtxt('../data/' + time_stamp + '-' + name + '-' + 'v'  + '.txt').reshape((-1,N))
-    ge_trace = np.loadtxt('../data/' + time_stamp + '-' + name + '-' + 'ge' + '.txt').reshape((-1,N))
-    gi_trace = np.loadtxt('../data/' + time_stamp + '-' + name + '-' + 'gi' + '.txt').reshape((-1,N))
-    w_trace  = np.loadtxt('../data/' + time_stamp + '-' + name + '-' + 'w'  + '.txt').reshape((-1,N))
+    stim_trace = np.loadtxt('../data/' + time_stamp + '-' + name + '-' + 'stim').reshape((N,-1))
+    v_trace  = np.loadtxt('../data/' + time_stamp + '-' + name + '-' + 'v').reshape((N,-1))
+    w_trace  = np.loadtxt('../data/' + time_stamp + '-' + name + '-' + 'w').reshape((N,-1))
+    I_trace  = np.loadtxt('../data/' + time_stamp + '-' + name + '-' + 'I').reshape((N,-1))
+    spike_raster = np.loadtxt('../data/' + time_stamp + '-' + name + '-' + 'raster').reshape((N,-1))
 
-    #a figure + 4 subplots for each trace
-    f, axarr = py.subplots(4)
-    axarr[0].plot(time_trace[1:],v_trace)
-    axarr[1].plot(time_trace[1:],ge_trace)
-    axarr[2].plot(time_trace[1:],gi_trace)
-    axarr[3].plot(time_trace[1:],w_trace)
+    stim_trace   = np.transpose(stim_trace)
+    v_trace      = np.transpose(v_trace)
+    w_trace      = np.transpose(w_trace)
+    I_trace      = np.transpose(I_trace)
+    spike_raster = np.transpose(spike_raster)
+    #figure + 3 subplots for each trace
+    if numpop == 1:
+      #use 1D plotting
+      axarr[0].plot(time_trace[1:],spike_raster,'.')
+      axarr[1].plot(time_trace[1:],v_trace)
+      axarr[2].plot(time_trace[1:],stim_trace[1:])
+      axarr[3].plot(time_trace[1:],w_trace)
 
-    axarr[0].set_title('membrane potential (mV)')
-    axarr[1].set_title('ge')
-    axarr[2].set_title('gi')
-    axarr[3].set_title('adaptation variable w')
+      axarr[0].set_title(name + ' spike raster')
+      axarr[1].set_title(name + ' membrane potential')
+      axarr[2].set_title(name + ' input current (minus injected)')
+      axarr[3].set_title(name + ' adaptation')
+    else:
+      axarr[0,i].plot(time_trace[1:],spike_raster,'.')
+      axarr[1,i].plot(time_trace[1:],I_trace,time_trace[1:],stim_trace[1:])#also include the external stimuli
+      axarr[2,i].plot(time_trace[1:],stim_trace[1:])
+      axarr[3,i].plot(time_trace[1:],w_trace)
 
-    py.show()
-    # py.plot(time_trace[1:], v_trace)
-    #     py.title(name + ' membrane potential')
-    #     py.ylabel('membrane potential (mV)')
-    #     py.xlabel('Time (msec)')
-    #     py.show()
-    #
-    #     py.plot(time_trace[1:], w_trace)
-    #     py.title(name + ' adaptation variable (w)')
-    #     py.ylabel('adaptation variable')
+      axarr[0,i].set_title(name + ' spike raster')
+      axarr[1,i].set_title(name + ' membrane potential')
+      axarr[2,i].set_title(name + ' input current (minus injected)')
+      axarr[3,i].set_title(name + ' adaptation')
+    i+=1
+  plt.autoscale(enable=False)
+  #plt.tight_layout()#no overlapping labels!
+  plt.show()
 
 def demo():
     cortex = Population(N=100,name='cortex',connectivity="sparse-random")
     thalamus = Population(N=50,name='thalamus',connectivity="sparse-random")
+    inhib = Population(N=100,name='inhibitory_complex',mode="Excitatory",connectivity="sparse-random")
     #connectivity is represented by a N by M matrix where N is #neurons in pre-synaptic
     #population and M is #neurons in post-synaptic population (columns)
-    fibers = generate_synapses(thalamus, cortex, connectivity="sparse-random")
-    brain = Network(populations=[thalamus, cortex])
-    brain.connect('thalamus','cortex',fibers)#do NOT call connect more than once!
-    #make up some input and feed it to the thalamus
-    stim = [{'start':10,'stop':20,'mV':10},{'start':30,'stop':40,'mV':20}]
-    results = brain.simulate(T=100,dt=0.25,I_inj={'thalamus':stim})#simulate for 50 msec, stimulating the thalamus
+    thalamocortical_fibers = generate_synapses(thalamus, cortex, connectivity="sparse-random")
+    corticoinhib = generate_synapses(cortex, inhib, connectivity="sparse-random")
+    inhibicortico = generate_synapses(inhib, cortex, connectivity="sparse-random")
+
+    brain = Network(populations=[thalamus, cortex, inhib])
+    brain.connect('thalamus','cortex',thalamocortical_fibers)#do NOT call connect more than once!
+    brain.connect('cortex','inhibitory_complex',corticoinhib)
+    brain.connect('inhibitory_complex','cortex', inhibicortico)
+    #make up some input and feed it to just the the thalamus
+    stim = [{'start':50,'stop':60,'mV':10},{'start':200,'stop':230,'mV':20}]
+    results = brain.simulate(T=1000,dt=0.25,I_inj={'thalamus':stim})#simulate for 50 msec, stimulating the thalamus
     load_data(results)
 
 def small_net():
-  group = Population(N=10,name='bob',connectivity="sparse-random")
-  pdb.set_trace()
+  group = Population(N=10,name='bob',connectivity="full-random")
   brain = Network(populations=[group])
-  stim = [{'start':10,'stop':100,'mV':10},{'start':30,'stop':40,'mV':20}]
-  results = brain.simulate(T=10,dt=0.125,I_inj={'bob':stim})#simulate for 50 msec, stimulating the thalamus
+  stim = [{'start':10,'stop':20,'mV':10},{'start':30,'stop':40,'mV':20},{'start':35,'stop':40,'mV':10}]
+  results = brain.simulate(T=100,dt=0.125,I_inj={'bob':stim})#simulate for 50 msec, stimulating the thalamus
   load_data(results)
 
 if __name__ == "__main__":
     #if we are running this script by itself (as opposed to inheriting, set up an example network)
-    small_net()
+    demo()
