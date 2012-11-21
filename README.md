@@ -50,7 +50,7 @@ results = brain.simulate(experiment_name='Single Neuron exhibiting tonic spiking
 show_data(results)
 ```
 
-![Alt text](https://github.com/ericjang/pyN/blob/master/images/single_tonic_spiking.png)
+![Alt text](https://raw.github.com/ericjang/pyN/master/images/single_tonic_spiking.png)
 
 ##Recurrent Networks
 
