@@ -10,37 +10,43 @@ import pickle
 import ipdb as pdb
 
 class Network():
-    def __init__(self, name='My Network', populations=[]):
-      self.name        = name
+    def __init__(self, populations=[]):
       self.populations = {}
       for p in populations:
         self.populations[p.name] = p
 
-    def connect(self, pre, post, synapses, delay_matrix=None):
+    def connect(self, pre, post, synapses, delay_matrix=None, delay=0.25, std=0.05):
       '''
       connect to populations together in a network
-      pre - presynaptic group
+      pre - presynaptic group (can be object itself or the name)
       post - postsynaptic group
       synapses - single directional synapse connections from pre to post. Supports string-based shortcut generation of synapses if desired
       delay_matrix - delay matrix times.
       Let us see for now what happens when one region drives another without getting feedback...
       '''
+
+      if type(pre) == str:
+        pre = self.populations[pre]
+      if type(post) == str:
+        post = self.populations[post]
+
       if type(synapses) == str:
-        (gen_synapses, gen_delay_matrix) = generate_synapses(pre_population=pre, post_population=post, connectivity=synapses)
+        (gen_synapses, gen_delay_matrix) = generate_synapses(pre_population=pre, post_population=post, connectivity=synapses,delay=delay,std=std)
         synapses = gen_synapses
 
-      if delay_matrix == None: delay_matrix = gen_delay_matrix
+      if delay_matrix == None: delay_matrix = gen_delay_matrix#use the one previously generated
 
-      self.populations[post].receiver.append({'from':pre,'syn':synapses, 'delay':delay_matrix})
+      post.receiver.append({'from':pre.name,'syn':synapses, 'delay':delay_matrix, 'delay_indices':None})
       return True
 
-    def simulate(self, T=50,dt=0.125,I_ext=None,spike_delta=100,save_data='./',properties_to_save=[]):
+    def simulate(self, experiment_name='My Experiment', T=50,dt=0.125,integration_time=30, I_ext=None,spike_delta=100,save_data='./',properties_to_save=[]):
         now             = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.T          = T
         self.dt         = dt
         self.time_trace = np.arange(0,T+dt,dt)#time array
 
         params = {
+          'experiment_name' : experiment_name,
           'time_stamp' : now,
           'T' : self.T,
           'dt' : self.dt,
@@ -59,13 +65,12 @@ class Network():
 
         #initialize populations for simulation.
         for name, p in self.populations.items():
-          p.initialize(len(self.time_trace), save_data, now, properties_to_save, dt)
-
+          p.initialize(T, len(self.time_trace), integration_time, save_data, now, properties_to_save, dt)
 
         #run the simulation
         for i, t in enumerate(self.time_trace[1:],1):
           #update state variables
-          for name, p in self.populations.items(): p.update_currents(all_populations=self.populations, I_ext=I_ext, t=t)
+          for name, p in self.populations.items(): p.update_currents(all_populations=self.populations, I_ext=I_ext, i=i, t=t, dt=self.dt)
           for name, p in self.populations.items(): p.update_state(i=i, T=self.T, t=t, dt=self.dt)
           #TODO : move this to be called by populations
           if (save_data):

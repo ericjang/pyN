@@ -38,19 +38,25 @@ class Base_Population():
     '''
     configure synapses and delays
     '''
-    if (synapses == None and connectivity == None): (self.synapses,self.delays) = generate_synapses(N,N,connectivity="none")
-    elif connectivity != None: (self.synapses,self.delays) = generate_synapses(N,N,connectivity=connectivity,delay=0.25,std=0.25)
-    elif (N == synapses.shape[0] == synapses.shape[1]): self.synapses = synapses
+    if (synapses == None and connectivity == None): (synapses,delays) = generate_synapses(N,N,connectivity="none")
+    elif connectivity != None: (synapses,delays) = generate_synapses(N,N,connectivity=connectivity,delay=0.25,std=0.05)
+    elif (N == synapses.shape[0] == synapses.shape[1]): synapses = synapses
     else: raise Exception("Synapse matrix wrong dimensions!")
 
     #feed the population into its own receiver
     if connectivity is not None:
-      self.receiver.append({'from':self.name,'syn':self.synapses, 'delay':self.delays})
+      self.receiver.append({'from':self.name,'syn':synapses,'delay':delays,'delay_indices':None})
 
-  def initialize(self, len_time_trace, save_data, now, properties_to_save, dt):
+  def initialize(self, T, len_time_trace, integration_time, save_data, now, properties_to_save, dt):
+    #extra static parameters & state variables added when simulation starts
+    self.T = T
     self.spike_raster = np.zeros((self.N, len_time_trace))
     self.psc = np.zeros((self.N, len_time_trace))
-    self.integrate_window = np.int(np.ceil(30/dt))
+    self.integrate_window = np.int(np.ceil(integration_time/dt))
+    #convert every delay in its receiver (including itself) into a delay_indices matrix
+    for connection in self.receiver:
+      connection['delay_indices'] = np.int16(connection['delay']/dt)#convert millisecond delays to number of indices to look back when retrieving appropriate current
+
     if self.integrate_window > len_time_trace:
       self.integrate_window = len_time_trace #if we are running a short simulation then integrate window will overflow available time slots!
     self.i_to_dt = np.array([i*dt for i in reversed(range(1,self.integrate_window + 1))])
@@ -87,29 +93,36 @@ class Base_Population():
     if self.mode == "Excitatory": return t*np.exp(-t/self.tau_psc)
     elif self.mode == "Inhibitory": return -t*np.exp(-t/self.tau_psc)
 
-  def update_currents(self, all_populations, I_ext, t):
+  def update_currents(self, all_populations, I_ext, i, t, dt):
     #reset I_ext (previously I was forgetting to do this and the whole thing was going nuts)
     self.I_ext = np.zeros(self.I_ext.shape[0])
+    self.I_rec = np.zeros(self.I_rec.shape)
     #update I_ext vector for current time step
     for name, inj in I_ext.items():
       if name == self.name:
         for stim in inj:
           if stim['start'] <= t <= stim['stop']:
-            self.I_ext += stim['mV']
+            #drive only neurons specified in stim['neurons']
+            current = np.zeros(self.N)
+            current[stim['neurons']] = stim['mV']
+            self.I_ext += current
 
     #update I_rec vector (includes own recurrent connections)
     for proj in self.receiver:
-      presyn = all_populations[proj['from']] #presynaptic population
-      #because we are accounting for spike delays now, we cannot dot the entire matrix. matlab has bsxfun but we'll just do a loop
       '''
       this looks like a bit of black magic but what we are doing here is starting out with a few of presyn's recent current values for each of its neurons.
       we subtract time delays, convert it to a index value, then get current perceived by postsynaptic population at time t.
       This is an expensive process, but better than a compartamental model and the easiest method I can think of.
       Future TODO: don't store entire current trace, just a sliding window of currents you MIGHT need to access at time t based on the longest delay time in network'
+
+      note that presyn.psc[]
+
       '''
-      delay_indices = (t - self.delays)/self.T
-      received_currents = presyn.psc[delay_indices, xrange(delay_indices.shape[1])]
-      p.I_rec += np.sum(self.synapses * received_currents, axis=1)#we only care about the diagonals
+      presyn = all_populations[proj['from']]
+      #delayed_current_indices = i - self.delay_indices
+      delayed_current_indices = i - proj['delay_indices']
+      received_currents = presyn.psc[xrange(delayed_current_indices.shape[1]),delayed_current_indices]
+      self.I_rec += np.sum(proj['syn'] * received_currents, axis=1)#we only care about the diagonals
 
   def update_state(self, i, T, t, dt):
     '''

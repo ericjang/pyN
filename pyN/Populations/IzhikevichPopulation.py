@@ -5,10 +5,10 @@ import ipdb as pdb
 class IzhikevichPopulation(Base_Population):
   def __init__(self, name, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None, N=10, synapses=None, mode="Excitatory", tau_psc=5.0, connectivity=None, spike_delta=30):
     Base_Population.__init__(self, name, N, synapses, mode, tau_psc, connectivity, spike_delta, v0)
-    self.a  = np.ones(self.N) * a
-    self.b  = np.ones(self.N) * b
-    self.c  = np.ones(self.N) * c
-    self.d  = np.ones(self.N) * d
+    self.a  = a
+    self.b  = b
+    self.c  = c
+    self.d  = d
     self.v  = np.ones(self.N) * v0
     self.u  = np.ones(self.N) * u0 if u0 is not None else np.ones(self.N) * b*v0
     self.du = lambda a, b, v, u: a*(b*v - u)
