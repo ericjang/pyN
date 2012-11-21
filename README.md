@@ -3,7 +3,7 @@ pyN(euron)
 
 pyN (pronounced 'pine') is a python module for simulating spiking neural networks.
 
-![Alt text](images/spike_freq_adapt_net.png)
+![Alt text](https://raw.github.com/ericjang/pyN/master/images/spike_freq_adapt_net.png)
 
 #Features:
 
@@ -50,7 +50,7 @@ results = brain.simulate(experiment_name='Single Neuron exhibiting tonic spiking
 show_data(results)
 ```
 
-![Alt text](images/single_tonic_spiking.png)
+![Alt text](https://github.com/ericjang/pyN/blob/master/images/single_tonic_spiking.png)
 
 ##Recurrent Networks
 
@@ -92,7 +92,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
 
 ###Result:
 
-![Alt text](images/thalamocortical-driving.png)
+![Alt text](https://raw.github.com/ericjang/pyN/master/images/thalamocortical-driving.png)
 
 #Performance:
   - Although pyN is biologically realistic and matrix calculations are vectorized, it is still dreadfully slow due to numerical integration techniques used when convolving spike deltas with exponential decay currents.
