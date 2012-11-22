@@ -146,7 +146,18 @@ class Base_Population():
 
     return True
 
-    #update the neuron's own psc trace
+  def update_psc(self,i,dt):
+    #default current convolution technique
+    #update self.psc
+    #if window is too big for current i or entire simulation, adjust i_to_dt.T accordingly
+    window = self.integrate_window if i > self.integrate_window else i
+    i_to_dt = self.i_to_dt if i > self.integrate_window else np.array([j*dt for j in reversed(range(1,window + 1))])
+    #for any row (populations), get the -window previous entries all the way to the current one + 1 (for inclusivity)
+    t_diff = self.spike_raster[:,i-window+1:i+1] * i_to_dt.T
+    self.psc[:,i] = np.sum(t_diff * np.exp(-t_diff/self.tau_psc), axis=1)
+
+
+
   def init_save(self, now, save_data, properties_to_save):
     #properties to save
     self.files = []
@@ -156,7 +167,7 @@ class Base_Population():
   def save_data(self,i):
     for file in self.files:
       prop = file['property']
-      if (prop in ['v','u','I_ext','I_syn']):
+      if (prop in ['v','u','w','I_ext','I_syn']):
         np.savetxt(file['file'], getattr(self, prop), fmt='%-7.4f')
       elif (prop in ['psc']):
         np.savetxt(file['file'], getattr(self,prop)[:,i],fmt='%-7.4f')

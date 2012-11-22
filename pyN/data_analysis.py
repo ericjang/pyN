@@ -47,6 +47,7 @@ def show_data(params):
       ax.plot(time_trace[1:],trace)
     j += 1
   #plt.autoscale(enable=False)
+  plt.tight_layout()
   plt.suptitle(params['experiment_name'],fontsize=18)
-  #plt.tight_layout()
+  plt.subplots_adjust(top=0.85)
   plt.show()

@@ -28,9 +28,4 @@ class IzhikevichPopulation(Base_Population):
     self.v[spiked] = self.spike_delta
     self.spike_raster[spiked,i] = 1
     #update self.psc
-    #if window is too big for current i or entire simulation, adjust i_to_dt.T accordingly
-    window = self.integrate_window if i > self.integrate_window else i
-    i_to_dt = self.i_to_dt if i > self.integrate_window else np.array([j*dt for j in reversed(range(1,window + 1))])
-    #for any row (populations), get the -window previous entries all the way to the current one + 1 (for inclusivity)
-    t_diff = self.spike_raster[:,i-window+1:i+1] * i_to_dt.T
-    self.psc[:,i] = np.sum(t_diff * np.exp(-t_diff/self.tau_psc), axis=1)
+    self.update_psc(i,dt)

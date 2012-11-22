@@ -94,6 +94,224 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
 
 ![Alt text](https://raw.github.com/ericjang/pyN/master/images/thalamocortical-driving.png)
 
+
+#Izhikevich Model Parameters:
+
+<table>
+    <tr>
+        <td>Type</td>
+        <td>Example</td>
+        <td>a</td>
+        <td>b</td>
+        <td>c</td>
+        <td>d</td>
+        <td>v0</td>
+        <td>u0</td>
+    </tr>
+    <tr>
+        <td>Tonic Spiking</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/tonic_spiking.png)</td>
+        <td>0.02</td>
+        <td>0.2</td>
+        <td>-65</td>
+        <td>6</td>
+        <td>-70</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Phasic Spiking</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/phasic_spiking.png)</td>
+        <td>0.02</td>
+        <td>0.25</td>
+        <td>-65</td>
+        <td>6</td>
+        <td>-64</td>
+        <td>u0</td>
+    </tr>
+    <tr>
+        <td>Tonic Bursting</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/tonic_bursting.png)</td>
+        <td>0.02</td>
+        <td>0.25</td>
+        <td>-50</td>
+        <td>d</td>
+        <td>2</td>
+        <td>-70</td>
+    </tr>
+    <tr>
+        <td>Phasic Bursting</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/phasic_bursting.png)</td>
+        <td>0.02</td>
+        <td>0.25</td>
+        <td>-55</td>
+        <td>0.05</td>
+        <td>-70</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Mixed Mode</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/mixed_mode.png)</td>
+        <td>0.02</td>
+        <td>0.2</td>
+        <td>-55</td>
+        <td>6</td>
+        <td>-60</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Spike Frequency Adaptation</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/spike_freq_adapt.png)</td>
+        <td>0.01</td>
+        <td>0.2</td>
+        <td>-65</td>
+        <td>8</td>
+        <td>-70</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Class 1 exc.</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/class1_exc.png)</td>
+        <td>0.02</td>
+        <td>-0.1</td>
+        <td>-55</td>
+        <td>6</td>
+        <td>-60</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Class 2 exc.</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/class2_exc_.png)</td>
+        <td>0.2</td>
+        <td>0.26</td>
+        <td>-65</td>
+        <td>0</td>
+        <td>-64</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Spike Latency</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/spike_latency_.png)</td>
+        <td>0.02</td>
+        <td>0.2</td>
+        <td>-65</td>
+        <td>6</td>
+        <td>-70</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Subthresh. osc.</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/subthresh_osc_.png)</td>
+        <td>0.05</td>
+        <td>0.26</td>
+        <td>-60</td>
+        <td>0</td>
+        <td>-62</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Resonator</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/resonator.png)</td>
+        <td>0.1</td>
+        <td>0.26</td>
+        <td>-60</td>
+        <td>-1</td>
+        <td>-62</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Integrator</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/integrator.png)</td>
+        <td>0.02</td>
+        <td>-0.1</td>
+        <td>-55</td>
+        <td>6</td>
+        <td>-60</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Rebound Spike</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/rebound_spike_.png)</td>
+        <td>0.03</td>
+        <td>0.25</td>
+        <td>-60</td>
+        <td>4</td>
+        <td>-64</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Rebound Burst</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/rebound_burst_.png)</td>
+        <td>0.03</td>
+        <td>0.25</td>
+        <td>-52</td>
+        <td>0</td>
+        <td>-64</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Thresh. variability</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/thresh_variability.png)</td>
+        <td>0.03</td>
+        <td>0.25</td>
+        <td>-60</td>
+        <td>4</td>
+        <td>-64</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Bistability</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/bistability.png)</td>
+        <td>0.1</td>
+        <td>0.26</td>
+        <td>-60</td>
+        <td>0</td>
+        <td>-61</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>DAP</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/DAP.png)</td>
+        <td>1</td>
+        <td>0.2</td>
+        <td>-60</td>
+        <td>-21</td>
+        <td>-70</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Accomodation</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/accomodation.png)</td>
+        <td>0.02</td>
+        <td>1</td>
+        <td>-55</td>
+        <td>4</td>
+        <td>-65</td>
+        <td>-16</td>
+    </tr>
+    <tr>
+        <td>Inhibition induced spiking</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/inhib_induced_spiking.png)</td>
+        <td>0.02</td>
+        <td>-1</td>
+        <td>-60</td>
+        <td>8</td>
+        <td>-63.8</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Inhibition induced bursting</td>
+        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/inhib_induced_bursting.png)</td>
+        <td>-0.026</td>
+        <td>-1</td>
+        <td>-45</td>
+        <td>-</td>
+        <td>-63.8</td>
+    </tr>
+</table>
+
+#Adaptive Exponential Integrate-and-Fire Parameters:
+
+
 #Performance:
   - Although pyN is biologically realistic and matrix calculations are vectorized, it is still dreadfully slow due to numerical integration techniques used when convolving spike deltas with exponential decay currents.
   - It takes ~10 minutes to simulate a single second of activity over 1000 Izhikevich neurons (recurrently connected to each other).
