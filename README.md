@@ -110,7 +110,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Tonic Spiking</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/tonic_spiking.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/tonic_spiking.png'></td>
         <td>0.02</td>
         <td>0.2</td>
         <td>-65</td>
@@ -120,7 +120,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Phasic Spiking</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/phasic_spiking.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/phasic_spiking.png'></td>
         <td>0.02</td>
         <td>0.25</td>
         <td>-65</td>
@@ -130,7 +130,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Tonic Bursting</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/tonic_bursting.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/tonic_bursting.png'></td>
         <td>0.02</td>
         <td>0.25</td>
         <td>-50</td>
@@ -140,7 +140,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Phasic Bursting</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/phasic_bursting.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/phasic_bursting.png'></td>
         <td>0.02</td>
         <td>0.25</td>
         <td>-55</td>
@@ -150,7 +150,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Mixed Mode</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/mixed_mode.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/mixed_mode.png'></td>
         <td>0.02</td>
         <td>0.2</td>
         <td>-55</td>
@@ -160,7 +160,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Spike Frequency Adaptation</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/spike_freq_adapt.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/spike_freq_adapt.png'></td>
         <td>0.01</td>
         <td>0.2</td>
         <td>-65</td>
@@ -170,7 +170,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Class 1 exc.</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/class1_exc.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/class1_exc.png'></td>
         <td>0.02</td>
         <td>-0.1</td>
         <td>-55</td>
@@ -180,7 +180,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Class 2 exc.</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/class2_exc_.png)</td>
+        <td>!<img src='https://raw.github.com/ericjang/pyN/master/images/class2_exc.png'></td>
         <td>0.2</td>
         <td>0.26</td>
         <td>-65</td>
@@ -190,7 +190,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Spike Latency</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/spike_latency_.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/spike_latency.png'></td>
         <td>0.02</td>
         <td>0.2</td>
         <td>-65</td>
@@ -200,7 +200,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Subthresh. osc.</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/subthresh_osc_.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/subthresh_osc.png'></td>
         <td>0.05</td>
         <td>0.26</td>
         <td>-60</td>
@@ -210,7 +210,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Resonator</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/resonator.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/resonator.png'></td>
         <td>0.1</td>
         <td>0.26</td>
         <td>-60</td>
@@ -220,7 +220,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Integrator</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/integrator.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/integrator.png'></td>
         <td>0.02</td>
         <td>-0.1</td>
         <td>-55</td>
@@ -230,7 +230,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Rebound Spike</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/rebound_spike_.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/rebound_spike.png'></td>
         <td>0.03</td>
         <td>0.25</td>
         <td>-60</td>
@@ -240,7 +240,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Rebound Burst</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/rebound_burst_.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/rebound_burst.png'></td>
         <td>0.03</td>
         <td>0.25</td>
         <td>-52</td>
@@ -250,7 +250,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Thresh. variability</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/thresh_variability.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/thresh_variability.png'></td>
         <td>0.03</td>
         <td>0.25</td>
         <td>-60</td>
@@ -260,7 +260,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Bistability</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/bistability.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/bistability.png'></td>
         <td>0.1</td>
         <td>0.26</td>
         <td>-60</td>
@@ -270,7 +270,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>DAP</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/DAP.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/DAP.png'></td>
         <td>1</td>
         <td>0.2</td>
         <td>-60</td>
@@ -280,7 +280,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Accomodation</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/accomodation.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/accomodation.png'></td>
         <td>0.02</td>
         <td>1</td>
         <td>-55</td>
@@ -290,7 +290,7 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Inhibition induced spiking</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/inhib_induced_spiking.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/inhib_induced_spiking.png'></td>
         <td>0.02</td>
         <td>-1</td>
         <td>-60</td>
@@ -300,12 +300,13 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
     </tr>
     <tr>
         <td>Inhibition induced bursting</td>
-        <td>![Alt text](https://raw.github.com/ericjang/pyN/master/images/inhib_induced_bursting.png)</td>
+        <td><img src='https://raw.github.com/ericjang/pyN/master/images/inhib_induced_bursting.png'></td>
         <td>-0.026</td>
         <td>-1</td>
         <td>-45</td>
         <td>-</td>
         <td>-63.8</td>
+        <td></td>
     </tr>
 </table>
 
