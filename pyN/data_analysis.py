@@ -44,7 +44,14 @@ def show_data(params):
       else:
         ax = axarr[i,j]
       ax.set_title(name + ' - ' + prop)
-      ax.plot(time_trace[1:],trace)
+      if prop == 'spike_raster':
+        trace[trace == 0] = np.nan
+        #scaling vector to separate out the dots from all = 1
+        scale = np.array([k for k in range(trace.shape[1])])
+        pdb.set_trace()
+        ax.plot(time_trace[1:],trace * scale[np.newaxis,:],'.')
+      else:
+        ax.plot(time_trace[1:],trace)
     j += 1
   #plt.autoscale(enable=False)
   plt.tight_layout()

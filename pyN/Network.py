@@ -39,11 +39,12 @@ class Network():
       post.receiver.append({'from':pre.name,'syn':synapses, 'delay':delay_matrix, 'delay_indices':None})
       return True
 
-    def simulate(self, experiment_name='My Experiment', T=50,dt=0.125,integration_time=30, I_ext=None,spike_delta=100,save_data='./',properties_to_save=[]):
+    def simulate(self, experiment_name='My Experiment', T=50,dt=0.125,integration_time=30, I_ext=None,spike_delta=100,save_data='./',properties_to_save=[],stdp=True):
         now             = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.T          = T
         self.dt         = dt
         self.time_trace = np.arange(0,T+dt,dt)#time array
+        self.stdp = stdp
 
         params = {
           'experiment_name' : experiment_name,
@@ -70,13 +71,19 @@ class Network():
         #run the simulation
         for i, t in enumerate(self.time_trace[1:],1):
           #update state variables
-          for name, p in self.populations.items(): p.update_currents(all_populations=self.populations, I_ext=I_ext, i=i, t=t, dt=self.dt)
-          for name, p in self.populations.items(): p.update_state(i=i, T=self.T, t=t, dt=self.dt)
+          for name, p in self.populations.items():
+            p.update_currents(all_populations=self.populations, I_ext=I_ext, i=i, t=t, dt=self.dt)
+            p.update_state(i=i, T=self.T, t=t, dt=self.dt)
+            if self.stdp:
+              p.update_synapses(all_populations=self.populations, i=i)
           #TODO : move this to be called by populations
           if (save_data):
+            #we don't want to update synapses of one population after saving te data of another so that's why we do save_data after simulation
+            #step is finished
             for name, p in self.populations.items():
               p.save_data(i)
           print("%0.3f%% done. t=%d msec" % ((float(i)/len(self.time_trace)*100.0),t))
+
         #simulation done - close the files
         if (save_data):
           for name, p in self.populations.items():

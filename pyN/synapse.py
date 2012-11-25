@@ -54,3 +54,25 @@ def generate_delay_matrix(pre_population, post_population, delay=0.25, std=0.1):
     distances += distances.T - np.diag(distances.diagonal())
     np.fill_diagonal(distances,0)
   return distances
+
+
+def stdp(time_diff, mode, A=0.01, tau=20):
+  '''
+  STDP function
+  time_diff is a N x ~200 matrix of time delays of spikes leading up to time i
+  values are positive if time_diff came from spikes preceding time i, and negative if following time i
+
+  returns delta_w value. However, values still need to be scaled according to how many times repeat took place, which requires
+  access to the population's synapse matrix. That will be applied AFTER stdp()
+
+  be careful here -> I am only performing exp on the nonzero parts, but that means that the returned array won't line up across time-row. That is
+  okay though, because
+
+  '''
+
+  mask = time_diff != 0
+  if mode == "LTP":
+    time_diff[mask] = A * np.exp(-1 * time_diff[mask]/tau)
+  elif mode == "LTD":
+    time_diff[mask] = -A * np.exp(time_diff[mask]/tau)
+  return time_diff

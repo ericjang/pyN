@@ -6,7 +6,7 @@ import os,sys
 parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0,parentdir)
 
-from pyN.synapse import generate_synapses
+from pyN.synapse import *
 import numpy as np
 import ipdb as pdb
 
@@ -47,23 +47,29 @@ class Base_Population():
     if connectivity is not None:
       self.receiver.append({'from':self.name,'syn':synapses,'delay':delays,'delay_indices':None})
 
-  def initialize(self, T, len_time_trace, integration_time, save_data, now, properties_to_save, dt):
+  def initialize(self, T, len_time_trace, integration_time, save_data, now, properties_to_save, dt, stdp_t_window=50):
     #extra static parameters & state variables added when simulation starts
+    '''
+    stdp_t_window = how many msec to look backwards/forwards. Cannot be infinite value otherwise LDP will never take place
+    '''
     self.T = T
     self.spike_raster = np.zeros((self.N, len_time_trace))
     self.psc = np.zeros((self.N, len_time_trace))
     self.integrate_window = np.int(np.ceil(integration_time/dt))
+    self.dt = dt
     #convert every delay in its receiver (including itself) into a delay_indices matrix
     for connection in self.receiver:
       connection['delay_indices'] = np.int16(connection['delay']/dt)#convert millisecond delays to number of indices to look back when retrieving appropriate current
 
     if self.integrate_window > len_time_trace:
       self.integrate_window = len_time_trace #if we are running a short simulation then integrate window will overflow available time slots!
-    self.i_to_dt = np.array([i*dt for i in reversed(range(1,self.integrate_window + 1))])
+    self.i_to_dt_psc = np.array([j*dt for j in reversed(range(1,self.integrate_window + 1))])
     if save_data:
       self.init_save(now, save_data, properties_to_save)
-
-
+    #convet stdp_window into number of time steps
+    #we could use one i_to_dt function but it is computationally faster to simply cache these calculations.
+    self.stdp_window = np.int(stdp_t_window / dt)
+    self.i_to_dt_stdp = np.array([j*dt for j in reversed(range(1,self.stdp_window + 1))])
 
   #configure EPSP or IPSPs
   def Isyn(self,postsyn,t_diff):
@@ -108,7 +114,7 @@ class Base_Population():
             self.I_ext += current
 
     #update I_rec vector (includes own recurrent connections)
-    for proj in self.receiver:
+    for recv in self.receiver:
       '''
       this looks like a bit of black magic but what we are doing here is starting out with a few of presyn's recent current values for each of its neurons.
       we subtract time delays, convert it to a index value, then get current perceived by postsynaptic population at time t.
@@ -118,11 +124,11 @@ class Base_Population():
       note that presyn.psc[]
 
       '''
-      presyn = all_populations[proj['from']]
+      presyn = all_populations[recv['from']]
       #delayed_current_indices = i - self.delay_indices
-      delayed_current_indices = i - proj['delay_indices']
+      delayed_current_indices = i - recv['delay_indices']
       received_currents = presyn.psc[xrange(delayed_current_indices.shape[1]),delayed_current_indices]
-      self.I_rec += np.sum(proj['syn'] * received_currents, axis=1)#we only care about the diagonals
+      self.I_rec += np.sum(recv['syn'] * received_currents, axis=1)#we only care about the diagonals
 
   def update_state(self, i, T, t, dt):
     '''
@@ -136,9 +142,9 @@ class Base_Population():
 
     #update self.psc
     if i==0:
-      #the first time update_state is run, initialize a self.i_to_dt vector that converts columns of spike raster into t_diff = times since last spike
+      #the first time update_state is run, initialize a self.i_to_dt_psc vector that converts columns of spike raster into t_diff = times since last spike
       self.integrate_window = i - np.floor(30/dt)
-      self.i_to_dt = np.array([i*dt for i in reversed(range(1,window))])
+      self.i_to_dt_psc = np.array([i*dt for i in reversed(range(1,window))])
 
     t_diff = self.spike_raster[self.integrate_window:] * (self.integrate_window * self.i_to_dt).T
     self.psc[:,i] = t_diff * np.exp(-t_diff/self.tau_psc)
@@ -146,17 +152,63 @@ class Base_Population():
 
     return True
 
-  def update_psc(self,i,dt):
+  def update_psc(self,i):
     #default current convolution technique
     #update self.psc
     #if window is too big for current i or entire simulation, adjust i_to_dt.T accordingly
     window = self.integrate_window if i > self.integrate_window else i
-    i_to_dt = self.i_to_dt if i > self.integrate_window else np.array([j*dt for j in reversed(range(1,window + 1))])
+    i_to_dt = self.i_to_dt_psc if i > self.integrate_window else np.array([j*self.dt for j in reversed(range(1,window + 1))])
     #for any row (populations), get the -window previous entries all the way to the current one + 1 (for inclusivity)
-    t_diff = self.spike_raster[:,i-window+1:i+1] * i_to_dt.T
+    t_diff = self.spike_raster[:,i-window+1:i+1] * i_to_dt
     self.psc[:,i] = np.sum(t_diff * np.exp(-t_diff/self.tau_psc), axis=1)
 
+  def update_synapses(self, all_populations, i, w_min=0, w_max=0):
+    '''
+    calls synaptic plasticity function to compute changes in synaptic weights (spike pairing rule), and then scales
+    according to the number of repeats.
 
+    in order for there to be balanced increasing/decreasing of weights, the time step actually being updated is not AT the current one, but halfway between 2*stdp_window
+
+    <---stdp_window (backwards)---> i - stdp_window <---- stdp_window ("forwards") (includes i)---->
+
+    this should be arbitrary for any two populations
+
+    '''
+    #FIXME
+    window = self.stdp_window if i > 2*self.stdp_window else np.int(np.floor((i-1)/2))#no stdp weight modification takes place until a certain amount of time has passed
+    i_to_dt = self.i_to_dt_stdp if i > 2*self.stdp_window else np.array([j*self.dt for j in reversed(range(1,window + 1))])
+    self_spiked = np.nonzero(self.spike_raster[:,i-window])
+
+    #step one, increase all weights of presyn->self
+    for recv in self.receiver:
+      #spiked,spiked_before,spiked_after are indices to which neurons spiked.
+      #I am assuming that window and spike_raster for all populations line up (time-wise)
+      if i >= 99:pdb.set_trace()
+      presyn = all_populations[recv['from']]
+      before = presyn.spike_raster[:,i - 2*window -1: i - window -1]
+      presyn_spiked_before = np.nonzero(np.sum(before,axis=1))
+      time_diff_before = before[presyn_spiked_before][:] * i_to_dt#only fetch time_diff_before if the neuron fired
+      #print time_diff_before.shape
+      #compute synapse increase vectors
+      w_plus = np.nonzero(np.sum(stdp(time_diff_before, mode="LTP"),axis=1))
+      #apply the synapse changes
+      print w_plus
+      recv['syn'][np.ix_(*(presyn_spiked_before + self_spiked))] += w_plus
+      #alternative way to get the view, join the  [rsum<165][:,csum>80], but it is not a view.
+      recv['syn'][recv['syn'] > w_max] = w_max
+
+    #step 2, decrease all weights of postsyn->self
+    for name, postsyn in all_populations.items():
+      for recv in postsyn.receiver:
+        if recv['from'] == self.name:
+          #self feeds into this population! decrease weights
+          after = postsyn.spike_raster[:,i-window:i]
+          postsyn_spiked_after = np.nonzero(np.sum(after,axis=1))
+          #make sure to reverse the i_to_dt vector and make these ones negative
+          time_diff_after = after * -i_to_dt[::-1]
+          w_minus = np.nonzero(np.sum(stdp(time_diff_after, mode="LTD"),axis=1))
+          recv['syn'][np.ix_(*(self_spiked + postsyn_spiked_after))] += w_minus
+          recv['syn'][recv['syn'] > w_min] = w_min
 
   def init_save(self, now, save_data, properties_to_save):
     #properties to save
@@ -168,9 +220,11 @@ class Base_Population():
     for file in self.files:
       prop = file['property']
       if (prop in ['v','u','w','I_ext','I_syn']):
-        np.savetxt(file['file'], getattr(self, prop), fmt='%-7.4f')
-      elif (prop in ['psc']):
-        np.savetxt(file['file'], getattr(self,prop)[:,i],fmt='%-7.4f')
+        vector = getattr(self, prop)
+      elif (prop in ['psc','spike_raster']):
+        vector = getattr(self,prop)[:,i]
+      np.savetxt(file['file'], vector, fmt='%-7.4f')
+
 
   def close(self):
     #close files.
