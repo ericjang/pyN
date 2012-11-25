@@ -15,6 +15,6 @@ brain.connect(pre='thalamus', post='cortex', synapses="sparse-random")
 brain.connect(pre='cortex', post='thalamus', synapses="sparse-random", delay=2.25,std=0.25)#takes awhile for cortex to get back to thalamus?
 
 stim = [{'start':10,'stop':200,'mV':20,'neurons':[0]},{'start':50,'stop':300,'mV':30,'neurons':[i for i in range(3)]}]
-results = brain.simulate(experiment_name='Reentrant Thalamocortical Circuit',T=600,dt=0.25, integration_time=30, I_ext={'thalamus':stim}, save_data='../data/', properties_to_save=['psc','I_ext','spike_raster'])
+results = brain.simulate(experiment_name='Reentrant Thalamocortical Circuit',T=600,dt=0.25, I_ext={'thalamus':stim}, save_data='../data/', properties_to_save=['psc','I_ext','spike_raster'],stdp=True)
 show_data(results)
 

@@ -69,10 +69,12 @@ def stdp(time_diff, mode, A=0.01, tau=20):
   okay though, because
 
   '''
-
-  mask = time_diff != 0
+  repeat_scaling = np.float(1.0/50)#the LTP equations actually only manifest after ~50 repetitions
+  #this may not perform as well, may have to model sigmoid based on repetitions
+  #note, if repeat_scaling = 1 (stdp curve applied after 1 repetition, then the network goes nuts. Be careful!)
+  mask = (time_diff != 0)
   if mode == "LTP":
     time_diff[mask] = A * np.exp(-1 * time_diff[mask]/tau)
   elif mode == "LTD":
     time_diff[mask] = -A * np.exp(time_diff[mask]/tau)
-  return time_diff
+  return time_diff * repeat_scaling

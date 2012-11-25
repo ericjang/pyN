@@ -162,7 +162,7 @@ class Base_Population():
     t_diff = self.spike_raster[:,i-window+1:i+1] * i_to_dt
     self.psc[:,i] = np.sum(t_diff * np.exp(-t_diff/self.tau_psc), axis=1)
 
-  def update_synapses(self, all_populations, i, w_min=0, w_max=0):
+  def update_synapses(self, all_populations, i, w_min=0, w_max=1):
     '''
     calls synaptic plasticity function to compute changes in synaptic weights (spike pairing rule), and then scales
     according to the number of repeats.
@@ -177,25 +177,24 @@ class Base_Population():
     #FIXME
     window = self.stdp_window if i > 2*self.stdp_window else np.int(np.floor((i-1)/2))#no stdp weight modification takes place until a certain amount of time has passed
     i_to_dt = self.i_to_dt_stdp if i > 2*self.stdp_window else np.array([j*self.dt for j in reversed(range(1,window + 1))])
-    self_spiked = np.nonzero(self.spike_raster[:,i-window])
+    self_spiked = (self.spike_raster[:,i-window] == 1)#np.nonzero is giving me a headache so i will use booleans
 
     #step one, increase all weights of presyn->self
     for recv in self.receiver:
       #spiked,spiked_before,spiked_after are indices to which neurons spiked.
       #I am assuming that window and spike_raster for all populations line up (time-wise)
-      if i >= 99:pdb.set_trace()
+      #if i >= 99:pdb.set_trace()
       presyn = all_populations[recv['from']]
       before = presyn.spike_raster[:,i - 2*window -1: i - window -1]
-      presyn_spiked_before = np.nonzero(np.sum(before,axis=1))
-      time_diff_before = before[presyn_spiked_before][:] * i_to_dt#only fetch time_diff_before if the neuron fired
+      #presyn_spiked_before = np.nonzero(np.sum(before,axis=1))
+      time_diff_before = before * i_to_dt#only fetch time_diff_before if the neuron fired
       #print time_diff_before.shape
       #compute synapse increase vectors
-      w_plus = np.nonzero(np.sum(stdp(time_diff_before, mode="LTP"),axis=1))
+      w_plus = np.sum(stdp(time_diff_before, mode="LTP"),axis=1)
       #apply the synapse changes
-      print w_plus
-      recv['syn'][np.ix_(*(presyn_spiked_before + self_spiked))] += w_plus
-      #alternative way to get the view, join the  [rsum<165][:,csum>80], but it is not a view.
+      recv['syn'][self_spiked,:] += w_plus
       recv['syn'][recv['syn'] > w_max] = w_max
+      np.fill_diagonal(recv['syn'],0)
 
     #step 2, decrease all weights of postsyn->self
     for name, postsyn in all_populations.items():
@@ -203,12 +202,14 @@ class Base_Population():
         if recv['from'] == self.name:
           #self feeds into this population! decrease weights
           after = postsyn.spike_raster[:,i-window:i]
-          postsyn_spiked_after = np.nonzero(np.sum(after,axis=1))
+          #postsyn_spiked_after = np.nonzero(np.sum(after,axis=1))
           #make sure to reverse the i_to_dt vector and make these ones negative
           time_diff_after = after * -i_to_dt[::-1]
-          w_minus = np.nonzero(np.sum(stdp(time_diff_after, mode="LTD"),axis=1))
-          recv['syn'][np.ix_(*(self_spiked + postsyn_spiked_after))] += w_minus
-          recv['syn'][recv['syn'] > w_min] = w_min
+          w_minus = np.sum(stdp(time_diff_after, mode="LTD"),axis=1)
+          #pdb.set_trace()
+          recv['syn'][:,self_spiked] += w_minus[:,np.newaxis]
+          recv['syn'][recv['syn'] < w_min] = w_min
+          np.fill_diagonal(recv['syn'],0)
 
   def init_save(self, now, save_data, properties_to_save):
     #properties to save

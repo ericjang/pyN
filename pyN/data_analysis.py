@@ -48,7 +48,6 @@ def show_data(params):
         trace[trace == 0] = np.nan
         #scaling vector to separate out the dots from all = 1
         scale = np.array([k for k in range(trace.shape[1])])
-        pdb.set_trace()
         ax.plot(time_trace[1:],trace * scale[np.newaxis,:],'.')
       else:
         ax.plot(time_trace[1:],trace)

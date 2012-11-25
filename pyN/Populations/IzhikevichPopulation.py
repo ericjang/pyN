@@ -16,7 +16,6 @@ class IzhikevichPopulation(Base_Population):
 
   def update_state(self, i, T, t, dt):
     #compute v and adaptation resets
-    print i
     prev_spiked = np.nonzero(self.spike_raster[:,i-1] == True)
     self.v[prev_spiked] = self.c
     self.u[prev_spiked] += self.d

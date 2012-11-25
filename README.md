@@ -41,7 +41,7 @@ stim = [{'start':10,'stop':100,'mV':14,'neurons':[0]}]
 ###3. Run the Network
 
 ```python
-results = brain.simulate(experiment_name='Single Neuron exhibiting tonic spiking',T=100,dt=0.25,integration_time=30,I_ext={'Charly the Neuron':stim}, save_data='../data/', properties_to_save=['v','u','psc','I_ext'])
+results = brain.simulate(experiment_name='Single Neuron exhibiting tonic spiking',T=100,dt=0.25,I_ext={'Charly the Neuron':stim}, save_data='../data/', properties_to_save=['v','u','psc','I_ext'])
 ```
 
 ###4. Look at data. Profit.
@@ -94,6 +94,16 @@ I_ext = {'thalamus':stim,'cortex':another_stim}
 
 ![Alt text](https://raw.github.com/ericjang/pyN/master/images/thalamocortical-driving.png)
 
+
+##Spike-Timing-Dependent Plasticity
+
+It has been proposed that STDP mechanisms act as a biologically plausible substrate to Hebbian Learning. STDP is active by default, but to disable it (for performance reasons, etc.), you can set the <code>stdp=False</code> flag when running the network:
+
+```python
+brain.simulate(stdp=False)
+```
+
+Note that it takes a fairly large number of repeated spike pairings for STDP weights to take effect.
 
 #Izhikevich Model Parameters:
 
