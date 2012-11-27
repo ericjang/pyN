@@ -1,5 +1,4 @@
 import numpy as np
-import ipdb as pdb
 
 
 def generate_synapses(pre_population, post_population, connectivity="sparse-random",delay=0.25,std=0.05):

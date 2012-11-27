@@ -1,6 +1,5 @@
 from Base_Population import Base_Population
 import numpy as np
-import ipdb as pdb
 
 class IzhikevichPopulation(Base_Population):
   def __init__(self, name, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None, N=10, synapses=None, mode="Excitatory", tau_psc=5.0, connectivity=None, spike_delta=30):

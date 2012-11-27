@@ -7,7 +7,6 @@ import numpy as np
 from synapse import *
 from datetime import datetime
 import pickle
-import ipdb as pdb
 
 class Network():
     def __init__(self, populations=[]):

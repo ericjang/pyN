@@ -8,7 +8,6 @@ sys.path.insert(0,parentdir)
 
 from pyN.synapse import *
 import numpy as np
-import ipdb as pdb
 
 class Base_Population():
   def __init__(self, name, N=10, synapses=None, mode="Excitatory", tau_psc=5.0, connectivity=None, spike_delta=100, v_rest=-70):
@@ -194,9 +193,10 @@ class Base_Population():
       #apply the synapse changes
       recv['syn'][self_spiked,:] += w_plus
       recv['syn'][recv['syn'] > w_max] = w_max
-      np.fill_diagonal(recv['syn'],0)
+      if recv['from'] == self.name:
+        np.fill_diagonal(recv['syn'],0)
 
-    #step 2, decrease all weights of postsyn->self
+    #step 2, decrease all weights of all_postsyn->self
     for name, postsyn in all_populations.items():
       for recv in postsyn.receiver:
         if recv['from'] == self.name:
@@ -209,7 +209,8 @@ class Base_Population():
           #pdb.set_trace()
           recv['syn'][:,self_spiked] += w_minus[:,np.newaxis]
           recv['syn'][recv['syn'] < w_min] = w_min
-          np.fill_diagonal(recv['syn'],0)
+          if recv['from'] == self.name:
+            np.fill_diagonal(recv['syn'],0)
 
   def init_save(self, now, save_data, properties_to_save):
     #properties to save

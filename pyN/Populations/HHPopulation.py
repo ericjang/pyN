@@ -7,7 +7,6 @@ conductance and current.
 
 from Base_Population import Base_Population
 import numpy as np
-import ipdb as pdb
 
 class HHPopulation(Base_Population):
   def __init__(self, name, N=1, synapses=None, mode="Excitatory", tau_psc=5.0, connectivity=None, spike_delta=30):
