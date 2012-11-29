@@ -7,8 +7,8 @@ sys.path.insert(0,parentdir)
 
 from pyN import *
 
-A = IzhikevichPopulation(name='thalamus', N=100, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None)#tonic spiking
-B = IzhikevichPopulation(name='cortex', N=50, a=0.02, b=0.25, c=-55, d=0.05, v0=-70, u0=None)#phasic bursting
+A = IzhikevichPopulation(name='thalamus', N=5, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None)#tonic spiking
+B = IzhikevichPopulation(name='cortex', N=10, a=0.02, b=0.25, c=-55, d=0.05, v0=-70, u0=None)#phasic bursting
 
 brain = Network(populations=[A,B])
 brain.connect(pre='thalamus', post='cortex', synapses="sparse-random")

@@ -8,13 +8,15 @@ from synapse import *
 from datetime import datetime
 import pickle
 
+import ipdb as pdb
+
 class Network():
     def __init__(self, populations=[]):
       self.populations = {}
       for p in populations:
         self.populations[p.name] = p
 
-    def connect(self, pre, post, synapses, delay_matrix=None, delay=0.25, std=0.05):
+    def connect(self, pre, post, synapses, mode="excitatory", delay_matrix=None, delay=0.25, std=0.05):
       '''
       connect to populations together in a network
       pre - presynaptic group (can be object itself or the name)
@@ -23,7 +25,6 @@ class Network():
       delay_matrix - delay matrix times.
       Let us see for now what happens when one region drives another without getting feedback...
       '''
-
       if type(pre) == str:
         pre = self.populations[pre]
       if type(post) == str:
@@ -31,13 +32,48 @@ class Network():
 
       if type(synapses) == str:
         (gen_synapses, gen_delay_matrix) = generate_synapses(pre_population=pre, post_population=post, connectivity=synapses,delay=delay,std=std)
-        synapses = gen_synapses
+        if mode == "excitatory":
+          synapses = gen_synapses
+        elif mode == "inhibitory":
+          synapses = -1.0 * gen_synapses#since gen_synapses[:,:,0] is initially all zero we are still ok
+
 
       if delay_matrix == None: delay_matrix = gen_delay_matrix#use the one previously generated
 
-      post.receiver.append({'from':pre.name,'syn':synapses, 'delay':delay_matrix, 'delay_indices':None})
+      post.receiver.append({'from':pre.name,'syn':synapses, 'delay':delay_matrix, 'delay_indices':None, 'connected':True, 'disabled_syn':None})
       return True
 
+    def disconnect(self, pre, post):
+      '''
+      toggles the connection off  -> used in re/dis-inhibition mechanisms
+      '''
+      if type(pre) == str:
+        pre = self.populations[pre]
+      if type(post) == str:
+        post = self.populations[post]
+      for recv in post.receiver:
+        if (recv['from'] == pre.name and recv['connected'] == True):
+          recv['disabled_syn'] = np.copy(recv['syn'])
+          recv['syn'] = np.zeros(recv['syn'].shape)#zero it out!
+          recv['connected'] = False
+
+    def reconnect(self, pre, post):
+      '''
+      toggles the connection back on if it was previously off -> used in re/dis-inhibition mechanisms
+      '''
+      if type(pre) == str:
+        pre = self.populations[pre]
+      if type(post) == str:
+        post = self.populations[post]
+      for recv in post.receiver:
+        if (recv['from'] == pre.name and recv['connected'] == False):
+          recv['syn'] = np.copy(recv['disabled_syn'])#restore the synapses
+          recv['connected'] = True
+
+
+    def get(self,pname):
+      #accessor for populations
+      return self.populations[pname]
     def simulate(self, experiment_name='My Experiment', T=50,dt=0.125,integration_time=30, I_ext=None,spike_delta=100,save_data='./',properties_to_save=[],stdp=True):
         now             = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.T          = T
@@ -70,7 +106,9 @@ class Network():
         #run the simulation
         for i, t in enumerate(self.time_trace[1:],1):
           #update state variables
+          print 'i=',i
           for name, p in self.populations.items():
+            #if i==96:pdb.set_trace()
             p.update_currents(all_populations=self.populations, I_ext=I_ext, i=i, t=t, dt=self.dt)
             p.update_state(i=i, T=self.T, t=t, dt=self.dt)
             if self.stdp:

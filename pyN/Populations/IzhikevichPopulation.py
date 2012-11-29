@@ -2,8 +2,8 @@ from Base_Population import Base_Population
 import numpy as np
 
 class IzhikevichPopulation(Base_Population):
-  def __init__(self, name, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None, N=10, synapses=None, mode="Excitatory", tau_psc=5.0, connectivity=None, spike_delta=30):
-    Base_Population.__init__(self, name, N, synapses, mode, tau_psc, connectivity, spike_delta, v0)
+  def __init__(self, name, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None, N=10, synapses=None, tau_psc=5.0, connectivity=None, spike_delta=30):
+    Base_Population.__init__(self, name, N, synapses, tau_psc, connectivity, spike_delta, v0)
     self.a  = a
     self.b  = b
     self.c  = c
@@ -16,6 +16,7 @@ class IzhikevichPopulation(Base_Population):
   def update_state(self, i, T, t, dt):
     #compute v and adaptation resets
     prev_spiked = np.nonzero(self.spike_raster[:,i-1] == True)
+    #be careful, prev_spiked is not the same as the one i am using in stdp! -> Future optimization should have these be the same
     self.v[prev_spiked] = self.c
     self.u[prev_spiked] += self.d
     #compute deltas and apply to state variables
@@ -28,4 +29,5 @@ class IzhikevichPopulation(Base_Population):
     self.spike_raster[spiked,i] = 1
     #update self.psc
     self.update_psc(i)
-    #update synapses
+    #reset I_ext
+    self.I_ext = np.zeros(self.I_ext.shape[0])

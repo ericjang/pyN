@@ -9,15 +9,18 @@ sys.path.insert(0,parentdir)
 from pyN.synapse import *
 import numpy as np
 
+
+import ipdb as pdb
+
+
 class Base_Population():
-  def __init__(self, name, N=10, synapses=None, mode="Excitatory", tau_psc=5.0, connectivity=None, spike_delta=100, v_rest=-70):
+  def __init__(self, name, N=10, synapses=None, tau_psc=5.0, connectivity=None, spike_delta=100, v_rest=-70):
     '''
     non-changing variables
     '''
     self.name = name
     self.N         = N           # Number of neurons in population
     self.receiver = [] #stored list of synapse weight matrices from other populations
-    self.mode       = mode       # Excitatory or Inhibitory currents generated
     self.tau_psc = tau_psc #postsynaptic current filter constant
     self.spike_delta = spike_delta
     self.T = None #needs to be set upon starting simulation.
@@ -95,12 +98,10 @@ class Base_Population():
 
     t[np.nonzero(t < 0)] = 0
     #in order for a good modicum of current to even be applied, t must be negative!
-    if self.mode == "Excitatory": return t*np.exp(-t/self.tau_psc)
-    elif self.mode == "Inhibitory": return -t*np.exp(-t/self.tau_psc)
+    return t*np.exp(-t/self.tau_psc)
 
   def update_currents(self, all_populations, I_ext, i, t, dt):
-    #reset I_ext (previously I was forgetting to do this and the whole thing was going nuts)
-    self.I_ext = np.zeros(self.I_ext.shape[0])
+    #I_ext is reset at the very end of the update_state
     self.I_rec = np.zeros(self.I_rec.shape)
     #update I_ext vector for current time step
     for name, inj in I_ext.items():
@@ -127,7 +128,7 @@ class Base_Population():
       #delayed_current_indices = i - self.delay_indices
       delayed_current_indices = i - recv['delay_indices']
       received_currents = presyn.psc[xrange(delayed_current_indices.shape[1]),delayed_current_indices]
-      self.I_rec += np.sum(recv['syn'] * received_currents, axis=1)#we only care about the diagonals
+      self.I_rec += np.sum(recv['syn'][:,:,0] * received_currents, axis=1)#we only care about the diagonals
 
   def update_state(self, i, T, t, dt):
     '''
@@ -148,7 +149,7 @@ class Base_Population():
     t_diff = self.spike_raster[self.integrate_window:] * (self.integrate_window * self.i_to_dt).T
     self.psc[:,i] = t_diff * np.exp(-t_diff/self.tau_psc)
     '''
-
+    self.I_ext = np.zeros(self.I_ext.shape[0])
     return True
 
   def update_psc(self,i):
@@ -173,44 +174,50 @@ class Base_Population():
     this should be arbitrary for any two populations
 
     '''
-    #FIXME
     window = self.stdp_window if i > 2*self.stdp_window else np.int(np.floor((i-1)/2))#no stdp weight modification takes place until a certain amount of time has passed
     i_to_dt = self.i_to_dt_stdp if i > 2*self.stdp_window else np.array([j*self.dt for j in reversed(range(1,window + 1))])
-    self_spiked = (self.spike_raster[:,i-window] == 1)#np.nonzero is giving me a headache so i will use booleans
+    self_spiked = (self.spike_raster[:,i-window-1] == 1)#np.nonzero is giving me a headache so i will use booleans
+
 
     #step one, increase all weights of presyn->self
     for recv in self.receiver:
       #spiked,spiked_before,spiked_after are indices to which neurons spiked.
       #I am assuming that window and spike_raster for all populations line up (time-wise)
-      #if i >= 99:pdb.set_trace()
       presyn = all_populations[recv['from']]
       before = presyn.spike_raster[:,i - 2*window -1: i - window -1]
+      spike_count = np.sum(before,axis=1)#this needs to be added to each row
+      pre_spiked = spike_count != 0.0#boolean array expressing which ones fired and which ones didnt
       #presyn_spiked_before = np.nonzero(np.sum(before,axis=1))
-      time_diff_before = before * i_to_dt#only fetch time_diff_before if the neuron fired
-      #print time_diff_before.shape
+      time_diff_before = before * i_to_dt
       #compute synapse increase vectors
-      w_plus = np.sum(stdp(time_diff_before, mode="LTP"),axis=1)
+      recv['syn'][np.ix_(self_spiked,pre_spiked) + (1,)] += spike_count[np.ix_(pre_spiked)]/np.float(window)#only filter out the positive counts, a.k.a. the ones that spiked
+      w_plus = np.sum(stdp(before, mode="LTP"),axis=1)#should be the same as applying sigmoid, then summing
       #apply the synapse changes
-      recv['syn'][self_spiked,:] += w_plus
-      recv['syn'][recv['syn'] > w_max] = w_max
+      #if pre_spiked and self_spiked: pdb.set_trace()
+      recv['syn'][np.ix_(self_spiked,pre_spiked) + (0,) ] += repetition_sigmoid(recv['syn'][np.ix_(self_spiked,pre_spiked) + (1,)]) * w_plus[np.ix_(pre_spiked)]
+      #increment the spike coincidence count in the third synapse dimension
+      recv['syn'][(recv['syn'][:,:,0] > w_max),0] = w_max#advanced indexing
       if recv['from'] == self.name:
-        np.fill_diagonal(recv['syn'],0)
+        np.fill_diagonal(recv['syn'][:,:,0],0)
 
-    #step 2, decrease all weights of all_postsyn->self
+    #generate post_spiked (self) so that decrease own weights from these to all other populations that spike at time i-window - 1
+    after = self.spike_raster[:,i-window:i]
+    self_spike_count = np.sum(after,axis=1)
+    self_post_spiked = self_spike_count != 0.0
+    time_diff_after = after * -i_to_dt[::-1]
+    w_minus = np.sum(stdp(time_diff_after, mode="LTD"),axis=1)
+
     for name, postsyn in all_populations.items():
       for recv in postsyn.receiver:
-        if recv['from'] == self.name:
-          #self feeds into this population! decrease weights
-          after = postsyn.spike_raster[:,i-window:i]
-          #postsyn_spiked_after = np.nonzero(np.sum(after,axis=1))
-          #make sure to reverse the i_to_dt vector and make these ones negative
-          time_diff_after = after * -i_to_dt[::-1]
-          w_minus = np.sum(stdp(time_diff_after, mode="LTD"),axis=1)
-          #pdb.set_trace()
-          recv['syn'][:,self_spiked] += w_minus[:,np.newaxis]
-          recv['syn'][recv['syn'] < w_min] = w_min
-          if recv['from'] == self.name:
-            np.fill_diagonal(recv['syn'],0)
+        if recv['from'] == self.name:#self feeds into this target population!
+          postsyn_spiked = postsyn.spike_raster[:,i-window-1] == 1
+          recv['syn'][np.ix_(postsyn_spiked,self_post_spiked) + (1,)] += self_spike_count[np.ix_(self_post_spiked)][np.newaxis,:]/np.float(window)
+          recv['syn'][np.ix_(postsyn_spiked,self_post_spiked) + (0,)] += repetition_sigmoid(recv['syn'][np.ix_(postsyn_spiked,self_post_spiked) + (1,)]) * w_minus[np.ix_(self_post_spiked)][np.newaxis,:]
+          recv['syn'][(recv['syn'][:,:,0] < w_min),0] = w_min#advanced indexing because synapses has 3 dimensions
+          if name == self.name:
+            np.fill_diagonal(recv['syn'][:,:,0],0)
+    for recv in self.receiver:
+      print str(recv['from']) + '-->' + self.name + '\t' + str(recv['syn'])
 
   def init_save(self, now, save_data, properties_to_save):
     #properties to save
@@ -221,7 +228,7 @@ class Base_Population():
   def save_data(self,i):
     for file in self.files:
       prop = file['property']
-      if (prop in ['v','u','w','I_ext','I_syn']):
+      if (prop in ['v','u','w','I_ext','I_syn','I_rec']):
         vector = getattr(self, prop)
       elif (prop in ['psc','spike_raster']):
         vector = getattr(self,prop)[:,i]

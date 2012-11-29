@@ -16,17 +16,19 @@ def generate_synapses(pre_population, post_population, connectivity="sparse-rand
     M = post_population.N
 
   if connectivity == "none":
-    synapses = np.zeros([M,N])
+    synapses = np.zeros([M,N,2])#the second layer is for the pre->then->post spike count
   elif connectivity == "full-random":
-    synapses = np.random.random([M,N])
+    synapses = np.zeros([M,N,2])
+    synapses[:,:,0] = np.random.random([M,N])
   elif connectivity == "sparse-random":
-    synapses = np.random.random([M,N])
+    synapses = np.zeros([M,N,2])
+    synapses[:,:,0] = np.random.random([M,N])
     syn_filter = (np.random.random([M,N]) < 0.1)#randomly filter out 90% of synapses, so only a 10th have weights
-    synapses *= syn_filter
+    synapses[:,:,0] *= syn_filter
   else:
     raise Exception("connectivity type not recognized! Check your spelling...")
   #we don't want neurons to recurrently excite themselves! so we set them to zero
-  np.fill_diagonal(synapses,0)
+  np.fill_diagonal(synapses[:,:,0],0)
 
   #generate appropriate distance matrices
   delays = generate_delay_matrix(N,M,delay=delay,std=std) #distance matrix
@@ -55,6 +57,9 @@ def generate_delay_matrix(pre_population, post_population, delay=0.25, std=0.1):
   return distances
 
 
+def repetition_sigmoid(M):
+  return 1/(1+np.exp(-0.2*M+10))
+
 def stdp(time_diff, mode, A=0.01, tau=20):
   '''
   STDP function
@@ -64,16 +69,12 @@ def stdp(time_diff, mode, A=0.01, tau=20):
   returns delta_w value. However, values still need to be scaled according to how many times repeat took place, which requires
   access to the population's synapse matrix. That will be applied AFTER stdp()
 
-  be careful here -> I am only performing exp on the nonzero parts, but that means that the returned array won't line up across time-row. That is
-  okay though, because
 
   '''
-  repeat_scaling = np.float(1.0/50)#the LTP equations actually only manifest after ~50 repetitions
-  #this may not perform as well, may have to model sigmoid based on repetitions
-  #note, if repeat_scaling = 1 (stdp curve applied after 1 repetition, then the network goes nuts. Be careful!)
-  mask = (time_diff != 0)
+  temp = np.copy(time_diff)#we don't want to modify the original!
+  mask = (temp != 0)
   if mode == "LTP":
-    time_diff[mask] = A * np.exp(-1 * time_diff[mask]/tau)
+    temp[mask] = A * np.exp(-1 * temp[mask]/tau)
   elif mode == "LTD":
-    time_diff[mask] = -A * np.exp(time_diff[mask]/tau)
-  return time_diff * repeat_scaling
+    temp[mask] = -A * np.exp(temp[mask]/tau)
+  return temp
