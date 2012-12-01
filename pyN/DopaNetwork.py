@@ -8,6 +8,7 @@ from synapse import *
 from Network import Network
 from datetime import datetime
 import pickle
+from random import randint
 
 class DopaNetwork(Network):
     def __init__(self, populations=[]):
@@ -65,57 +66,70 @@ class DopaNetwork(Network):
 
           Thalamus decides action???
           '''
-          thal = self.get('Thalamus')
-          half = thal.N/2
-          if np.sum(thal.spike_raster[50:75,i])/half >= 0.5:
-            #dopamine burst
+          thal_add = self.get('thal+')
+          thal_sub = self.get('thal-')
+          thal_in = self.get('thal_in')
+
+
+          if np.sum(thal_add.spike_raster[:,i])/(thal_add.N/2) >= 0.5:
             print '\t\t\t\tincreasing...'
-            self.foobar = self.foobar_prev + 1#update state variable
+            self.foobar = self.foobar_prev + 1#increase state variable
             self.foobar_prev = self.foobar
-            thal.I_ext[20:35] += 14
 
-          if np.sum(thal.spike_raster[75:100,i])/half >= 0.5:
+          if np.sum(thal_sub.spike_raster[:,i])/(thal_sub.N/2) >= 0.5:
             print '\t\t\t\tdecreasing...'
-            self.foobar = self.foobar_prev - 1#update state variable
+            self.foobar = self.foobar_prev - 1#increase state variable
             self.foobar_prev = self.foobar
-            thal.I_ext[35:50] += 14
 
+          #diff = distance from target relative to prev
+          diff = np.abs(100 - self.foobar_prev) - np.abs(100 - self.foobar)
           #action update
-          if np.abs(100 - self.foobar) < np.abs(100 - self.foobar_prev):
-            #we are closer to target!
-            #dopamine burst
+          if diff > 0:
+            #we are closer to target -> dopamine burst
             print 'dopa burst'
-            self.reconnect(pre='Substantia Nigra Complex',post='Go+')
-            self.reconnect(pre='Substantia Nigra Complex',post='Go-')
-            self.reconnect(pre='Substantia Nigra Complex',post='NoGo+')
-            self.reconnect(pre='Substantia Nigra Complex',post='NoGo-')
-            self.disconnect(pre='NoGo+',post='Globus Pallidus-External Segment')
-            self.disconnect(pre='NoGo-',post='Globus Pallidus-External Segment')
-            self.reconnect(pre='Go+',post='Globus Pallidus-Internal Segment')
-            self.reconnect(pre='Go-',post='Globus Pallidus-Internal Segment')
-            self.reconnect(pre='Globus Pallidus-External Segment',post='Globus Pallidus-Internal Segment')
-            self.disconnect(pre='Globus Pallidus-Internal Segment',post='Thalamus')
-          else:
-            #dopamine dip
+            self.reconnect(pre='snc',post='Go+')
+            self.reconnect(pre='snc',post='Go-')
+            self.reconnect(pre='snc',post='NoGo+')
+            self.reconnect(pre='snc',post='NoGo-')
+
+            self.disconnect(pre='NoGo+',post='gpe+')
+            self.disconnect(pre='NoGo-',post='gpe-')
+            self.reconnect(pre='Go+',post='gpi+')
+            self.reconnect(pre='Go-',post='gpi-')
+
+            self.reconnect(pre='gpe+',post='gpi+')
+            self.reconnect(pre='gpe-',post='gpi-')
+            self.disconnect(pre='gpi+',post='thal+')
+            self.disconnect(pre='gpi-',post='thal-')
+          elif diff < 0:
+            #we are farther from target -> dopamine dip
             print 'dopa dip'
-            self.disconnect(pre='Substantia Nigra Complex',post='Go+')
-            self.disconnect(pre='Substantia Nigra Complex',post='Go-')
-            self.disconnect(pre='Substantia Nigra Complex',post='NoGo+')
-            self.disconnect(pre='Substantia Nigra Complex',post='NoGo-')
-            self.reconnect(pre='NoGo+',post='Globus Pallidus-External Segment')
-            self.reconnect(pre='NoGo-',post='Globus Pallidus-External Segment')
-            self.disconnect(pre='Go+',post='Globus Pallidus-Internal Segment')
-            self.disconnect(pre='Go-',post='Globus Pallidus-Internal Segment')
-            self.disconnect(pre='Globus Pallidus-External Segment',post='Globus Pallidus-Internal Segment')
-            self.reconnect(pre='Globus Pallidus-Internal Segment',post='Thalamus')
-            #ought to inspect state of network here...
-            #pdb.set_trace()
+            self.disconnect(pre='snc',post='Go+')
+            self.disconnect(pre='snc',post='Go-')
+            self.disconnect(pre='snc',post='NoGo+')
+            self.disconnect(pre='snc',post='NoGo-')
+
+            self.reconnect(pre='NoGo+',post='gpe+')
+            self.reconnect(pre='NoGo-',post='gpe-')
+            self.disconnect(pre='Go+',post='gpi+')
+            self.disconnect(pre='Go-',post='gpi-')
+
+            self.disconnect(pre='gpe+',post='gpi+')
+            self.disconnect(pre='gpe-',post='gpi-')
+            self.reconnect(pre='gpi+',post='thal+')
+            self.reconnect(pre='gpi-',post='thal-')
+          elif diff == 0:
+            #neutral state. Give some random input to a couple neurons
+            #should we switch back to 'Go' mode so actions can happen?
+            print 'neutral'
+            x = randint(0,thal_in.N-4)
+            thal_in.I_ext[x:x+3]
 
           #encode environment (foobar) into thalamus
-          thal.I_ext[0:20] += np.abs(self.foobar)/10#5 corresponds to the input feeding to 5 neurons
+          #thal.I_ext[0:20] += np.abs(self.foobar)/10#5 corresponds to the input feeding to 5 neurons
 
           #write to file
-          foofile.write(str(self.foobar))
+          foofile.write(str(self.foobar)+'\n')
 
           if (save_data):
             #we don't want to update synapses of one population after saving te data of another so that's why we do save_data after simulation

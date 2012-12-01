@@ -5,8 +5,12 @@ Given a params object or a results string, plot any data needed
 
 import numpy as np
 import pickle
+import matplotlib
 import matplotlib.pyplot as plt
-import ipdb as pdb
+
+#import ipdb as pdb
+
+matplotlib.use('Agg')#so we don't need GUI to plot!
 
 def process_data(params):
   #given a file path string or simulation results (embedded in a parmas object), re-load into memory and plot.

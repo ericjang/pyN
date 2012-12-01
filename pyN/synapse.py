@@ -76,5 +76,5 @@ def stdp(time_diff, mode, A=0.01, tau=20):
   if mode == "LTP":
     temp[mask] = A * np.exp(-1 * temp[mask]/tau)
   elif mode == "LTD":
-    temp[mask] = -A * np.exp(temp[mask]/tau)
+    temp[mask] = -A * np.exp(temp[mask]/(tau/2))#<--let's make LTD stronger than LTP and see what happens
   return temp

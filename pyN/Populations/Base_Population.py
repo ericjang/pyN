@@ -10,11 +10,11 @@ from pyN.synapse import *
 import numpy as np
 
 
-import ipdb as pdb
+#import ipdb as pdb
 
 
 class Base_Population():
-  def __init__(self, name, N=10, synapses=None, tau_psc=5.0, connectivity=None, spike_delta=100, v_rest=-70):
+  def __init__(self, name, N=10, tau_psc=2.5, connectivity=None, spike_delta=100, v_rest=-70):
     '''
     non-changing variables
     '''
@@ -40,9 +40,8 @@ class Base_Population():
     '''
     configure synapses and delays
     '''
-    if (synapses == None and connectivity == None): (synapses,delays) = generate_synapses(N,N,connectivity="none")
+    if (connectivity == None): (synapses,delays) = generate_synapses(N,N,connectivity="none")
     elif connectivity != None: (synapses,delays) = generate_synapses(N,N,connectivity=connectivity,delay=0.25,std=0.05)
-    elif (N == synapses.shape[0] == synapses.shape[1]): synapses = synapses
     else: raise Exception("Synapse matrix wrong dimensions!")
 
     #feed the population into its own receiver
@@ -162,7 +161,7 @@ class Base_Population():
     t_diff = self.spike_raster[:,i-window+1:i+1] * i_to_dt
     self.psc[:,i] = np.sum(t_diff * np.exp(-t_diff/self.tau_psc), axis=1)
 
-  def update_synapses(self, all_populations, i, w_min=0, w_max=1):
+  def update_synapses(self, all_populations, i, w_min=-1, w_max=1):
     '''
     calls synaptic plasticity function to compute changes in synaptic weights (spike pairing rule), and then scales
     according to the number of repeats.
@@ -213,11 +212,11 @@ class Base_Population():
           postsyn_spiked = postsyn.spike_raster[:,i-window-1] == 1
           recv['syn'][np.ix_(postsyn_spiked,self_post_spiked) + (1,)] += self_spike_count[np.ix_(self_post_spiked)][np.newaxis,:]/np.float(window)
           recv['syn'][np.ix_(postsyn_spiked,self_post_spiked) + (0,)] += repetition_sigmoid(recv['syn'][np.ix_(postsyn_spiked,self_post_spiked) + (1,)]) * w_minus[np.ix_(self_post_spiked)][np.newaxis,:]
-          recv['syn'][(recv['syn'][:,:,0] < w_min),0] = w_min#advanced indexing because synapses has 3 dimensions
+	  recv['syn'][(recv['syn'][:,:,0] < w_min),0] = w_min#advanced indexing because synapses has 3 dimensions
           if name == self.name:
             np.fill_diagonal(recv['syn'][:,:,0],0)
-    for recv in self.receiver:
-      print str(recv['from']) + '-->' + self.name + '\t' + str(recv['syn'])
+    #for recv in self.receiver:
+      #print str(recv['from']) + '-->' + self.name + '\t' + str(recv['syn'])
 
   def init_save(self, now, save_data, properties_to_save):
     #properties to save

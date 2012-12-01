@@ -2,8 +2,8 @@ from Base_Population import Base_Population
 import numpy as np
 
 class IzhikevichPopulation(Base_Population):
-  def __init__(self, name, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None, N=10, synapses=None, tau_psc=5.0, connectivity=None, spike_delta=30):
-    Base_Population.__init__(self, name, N, synapses, tau_psc, connectivity, spike_delta, v0)
+  def __init__(self, name, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None, N=10, tau_psc=5.0, connectivity=None, spike_delta=30):
+    Base_Population.__init__(self, name, N, tau_psc, connectivity, spike_delta, v0)
     self.a  = a
     self.b  = b
     self.c  = c
