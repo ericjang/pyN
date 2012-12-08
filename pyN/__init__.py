@@ -1,5 +1,7 @@
-from data_analysis import *
-from Populations import AdExPopulation, IzhikevichPopulation
-from Network import *
-from DopaNetwork import *
-from synapse import *
+from __future__ import absolute_import
+
+from pyN.data_analysis import *
+from pyN.Populations import AdExPopulation, IzhikevichPopulation
+from pyN.Network import *
+from pyN.DopaNetwork import *
+from pyN.synapse import *

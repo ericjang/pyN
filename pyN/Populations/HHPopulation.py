@@ -1,14 +1,10 @@
-'''
-incomplete Hodgkin-Huxley Neuron types.
-
--> this does not generate 'fire' events, and uses conductanes. Ought to look into the relationship between
-conductance and current.
-'''
-
 from Base_Population import Base_Population
 import numpy as np
 
 class HHPopulation(Base_Population):
+  """
+  Hogdkin-Huxley Population Class. Still a work-in-progress
+  """
   def __init__(self, name, N=1, synapses=None, mode="Excitatory", tau_psc=5.0, connectivity=None, spike_delta=30):
     Base_Population.__init__(self, name, N, synapses, mode, tau_psc, connectivity, spike_delta, v_reset)
     ## Functions

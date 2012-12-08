@@ -1,11 +1,16 @@
 import numpy as np
 
 
-def generate_synapses(pre_population, post_population, connectivity="sparse-random",delay=0.25,std=0.05):
-  '''
-  returns synapse matrix
-  pre_population and post_population can either be a Population object OR dimensions (int) of population objects
-  '''
+def generate_synapses(pre_population, post_population, connectivity="sparse-random",delay=0.25,std=0.05,scale=1.0):
+  """
+  Return MxNx2 synapse matrix
+  @param pre_population str|Population Population instance or string pointing a Population.
+  @param post_population str|Population Population instance or string pointing a Population.
+  @param connectivity str Description of how the presynaptic and postsynaptic populations are connected
+  @param delay float Mean Axonal delay
+  @param std float Standard Deviation of Axonal Delay (normal distribution)
+  @parma scale float Scale all synapses by this amount.
+  """
   if type(pre_population) == int:
     N = pre_population
   else:
@@ -19,12 +24,13 @@ def generate_synapses(pre_population, post_population, connectivity="sparse-rand
     synapses = np.zeros([M,N,2])#the second layer is for the pre->then->post spike count
   elif connectivity == "full-random":
     synapses = np.zeros([M,N,2])
-    synapses[:,:,0] = np.random.random([M,N])
+    synapses[:,:,0] = np.random.random([M,N]) * scale
   elif connectivity == "sparse-random":
     synapses = np.zeros([M,N,2])
     synapses[:,:,0] = np.random.random([M,N])
     syn_filter = (np.random.random([M,N]) < 0.1)#randomly filter out 90% of synapses, so only a 10th have weights
     synapses[:,:,0] *= syn_filter
+    synapses[:,:,0] *= scale#use much smaller weights to decrease epileptic/rebounding behavior of network
   else:
     raise Exception("connectivity type not recognized! Check your spelling...")
   #we don't want neurons to recurrently excite themselves! so we set them to zero
@@ -35,10 +41,7 @@ def generate_synapses(pre_population, post_population, connectivity="sparse-rand
   return (synapses, delays)
 
 def generate_delay_matrix(pre_population, post_population, delay=0.25, std=0.1):
-  '''
-  given delay time (msec), return a random, symmetric delay matrix with diagonal = 0. random entries normally distributed around delay.
-  std = standard deviation of delay time
-  '''
+  """generate delay matrix between two populations"""
   if type(pre_population) == int:
     N = pre_population
   else:
@@ -58,19 +61,17 @@ def generate_delay_matrix(pre_population, post_population, delay=0.25, std=0.1):
 
 
 def repetition_sigmoid(M):
-  return 1/(1+np.exp(-0.2*M+10))
+  """
+  Used to model repetition-driven effects of STDP. More repetitions results in stronger increase/decrease.
+  """
+  return 1.0/(1+np.exp(-0.2*M+10))
 
 def stdp(time_diff, mode, A=0.01, tau=20):
-  '''
+  """
   STDP function
-  time_diff is a N x ~200 matrix of time delays of spikes leading up to time i
-  values are positive if time_diff came from spikes preceding time i, and negative if following time i
-
-  returns delta_w value. However, values still need to be scaled according to how many times repeat took place, which requires
-  access to the population's synapse matrix. That will be applied AFTER stdp()
-
-
-  '''
+  @params time_diff ndarray Nx~200 matrix of time delays in spikes leading up to time i. Values are positive if time_diff came from spikes preceeding time i, and negative if following time i
+  @returns delta_w ndarray Values will still need to be scaled according to how many times took place. Applied after stdp()
+  """
   temp = np.copy(time_diff)#we don't want to modify the original!
   mask = (temp != 0)
   if mode == "LTP":

@@ -1,9 +1,12 @@
-from Base_Population import Base_Population
+from pyN.Populations.Base_Population import Base_Population
 import numpy as np
 
 class IzhikevichPopulation(Base_Population):
-  def __init__(self, name, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None, N=10, tau_psc=5.0, connectivity=None, spike_delta=30):
-    Base_Population.__init__(self, name, N, tau_psc, connectivity, spike_delta, v0)
+  """
+  Izhikevich Population. Similar to Adaptive Exponential, but uses fewer parameters and is less sensitive to rebound spiking effects.
+  """
+  def __init__(self, name, a=0.02, b=0.2, c=-65, d=6, v0=-70, u0=None, N=10, tau_psc=5.0, connectivity=None, spike_delta=30, scale=1.0):
+    Base_Population.__init__(self, name, N, tau_psc, connectivity, spike_delta, v0, scale)
     self.a  = a
     self.b  = b
     self.c  = c

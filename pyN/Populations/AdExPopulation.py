@@ -1,9 +1,14 @@
-from Base_Population import Base_Population
+from pyN.Populations.Base_Population import Base_Population
 import numpy as np
 
 class AdExPopulation(Base_Population):
-  def __init__(self, name, cm=0.281, tau_refrac=0.1, v_spike=-40.0, v_reset=-70.6, v_rest=-70.6, tau_m=9.3667, i_offset=0.0, a=4.0, b=0.0805, delta_T=2.0,tau_w=144.0,v_thresh=-50.4,e_rev_E=0.0, tau_syn_E=5.0, e_rev_I=-80.0, tau_syn_I=5.0, N=1, tau_psc=2.5, connectivity=None, spike_delta=30):
-    Base_Population.__init__(self, name, N, tau_psc, connectivity, spike_delta, v_reset)
+  def __init__(self, name, cm=0.281, tau_refrac=0.1, v_spike=-40.0, v_reset=-70.6, v_rest=-70.6, tau_m=9.3667, i_offset=0.0, a=4.0, b=0.0805, delta_T=2.0,tau_w=144.0,v_thresh=-50.4,e_rev_E=0.0, tau_syn_E=5.0, e_rev_I=-80.0, tau_syn_I=5.0, N=1, tau_psc=5.0, connectivity=None, spike_delta=30,scale=0.5):
+    """
+    AdEx Constructor
+
+
+    """
+    Base_Population.__init__(self, name, N, tau_psc, connectivity, spike_delta, v_reset,scale)
     self.cm         = cm         # Capacitance of the membrane in nF
     self.tau_refrac = tau_refrac # Duration of refractory period in ms.
     self.v_spike    = v_spike    # Spike detection threshold in mV.

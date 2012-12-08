@@ -11,36 +11,32 @@ sys.path.insert(0,parentdir)
 from pyN import *
 
 #substantia nigra releases dopamine. Stimulate this when good things happen. This one is special. because it is excitatory towards Go and inhibitory towards NoGo.
+SNc      = AdExPopulation(name='snc',N=30, connectivity="sparse-random")
+Go_add   = AdExPopulation(name='Go+', N=20, connectivity="sparse-random")
+Go_sub   = AdExPopulation(name='Go-', N=20, connectivity="sparse-random")
+NoGo_add = AdExPopulation(name='NoGo+',N=20, connectivity="sparse-random")
+NoGo_sub = AdExPopulation(name='NoGo-',N=20, connectivity="sparse-random")
 
+#these inhibitory populations act to balance out activity and prevent go/nogo from going nuts when (not) driven by dopamine.
+#Go_inhib = AdExPopulation(name='go_inhib',N=8,connectivity="sparse-random")
+#NoGo_inhib = AdExPopulation(name='nogo_inhib',N=8,connectivity="sparse-random")
 
-SNc      = AdExPopulation(name='snc',N=20, connectivity="sparse-random")
+GPi_add  = AdExPopulation(name='gpi+',N=10, connectivity="sparse-random")
+GPi_sub  = AdExPopulation(name='gpi-',N=10, connectivity="sparse-random")
+GPe_add  = AdExPopulation(name='gpe+',N=10, connectivity="sparse-random")
+GPe_sub  = AdExPopulation(name='gpe-',N=10, connectivity="sparse-random")
 
-Go_add   = AdExPopulation(name='Go+', N=30, connectivity="sparse-random")
-Go_sub   = AdExPopulation(name='Go-', N=30, connectivity="sparse-random")
-NoGo_add = AdExPopulation(name='NoGo+',N=30, connectivity="sparse-random")
-NoGo_sub = AdExPopulation(name='NoGo-',N=30, connectivity="sparse-random")
-
-GPi_add  = AdExPopulation(name='gpi+',N=20, connectivity="sparse-random")
-GPi_sub  = AdExPopulation(name='gpi-',N=20, connectivity="sparse-random")
-GPe_add  = AdExPopulation(name='gpe+',N=20, connectivity="sparse-random")
-GPe_sub  = AdExPopulation(name='gpe-',N=20, connectivity="sparse-random")
-
-thal_in = AdExPopulation(name='thal_in',N=20,connectivity="sparse-random")#where sensory info goes in
+thal_in = AdExPopulation(name='thal_in',N=30,connectivity="sparse-random")#where sensory info goes in
 thal_add = AdExPopulation(name='thal+',N=20, connectivity="sparse-random")#where motor output comes out
 thal_sub = AdExPopulation(name='thal-',N=20, connectivity="sparse-random")
 
-PFC_add  = AdExPopulation(name='pfc+', N=42, connectivity="sparse-random")
-PFC_sub  = AdExPopulation(name='pfc-', N=42, connectivity="sparse-random")
-
-
+PFC_add  = AdExPopulation(name='pfc+', N=85, connectivity="sparse-random")
+PFC_sub  = AdExPopulation(name='pfc-', N=85, connectivity="sparse-random")
 '''
 In order for stability to occur in cortex, each should also have 15 percent inhibitory neurons? Do the cortex for now.
 If the other parts of brain also go nuts consider adding inhibitory neurons to those as well.
 '''
-PFC_inhib = AdExPopulation(name='pfc_inhib',N=15,connectivity="sparse-random")
-
-
-
+PFC_inhib = AdExPopulation(name='pfc_inhib',N=30,connectivity="sparse-random")
 brain = DopaNetwork(populations=[SNc, Go_add, NoGo_add, Go_sub, NoGo_sub, GPi_add, GPe_add, GPi_sub, GPe_sub, thal_in, thal_add, thal_sub, PFC_add, PFC_sub, PFC_inhib])
 #set up the excitatory connections between the populations
 
@@ -50,6 +46,19 @@ brain.connect(pre='snc', post='Go-', synapses="sparse-random", mode='excitatory'
 brain.connect(pre='snc', post='NoGo+', synapses="sparse-random", mode='inhibitory', delay=2.25,std=0.25)
 brain.connect(pre='snc', post='NoGo-', synapses="sparse-random", mode='inhibitory', delay=2.25,std=0.25)
 
+#Go/NoGo Balanced by inhibitory population
+
+'''s
+brain.connect(pre='Go+', post='go_inhib', synapses="sparse-random", mode='excitatory')
+brain.connect(pre='Go-', post='go_inhib', synapses="sparse-random", mode='excitatory')
+brain.connect(pre='NoGo+', post='nogo_inhib', synapses="sparse-random", mode='excitatory')
+brain.connect(pre='NoGo-', post='nogo_inhib', synapses="sparse-random", mode='excitatory')
+
+brain.connect(pre='go_inhib', post='Go+', synapses="sparse-random", mode='inhibitory')
+brain.connect(pre='go_inhib', post='Go-', synapses="sparse-random", mode='inhibitory')
+brain.connect(pre='nogo_inhib', post='NoGo+', synapses="sparse-random", mode='inhibitory')
+brain.connect(pre='nogo_inhib', post='NoGo-', synapses="sparse-random", mode='inhibitory')
+'''
 #frontal cortex -> excitatory connections to all the go populations
 brain.connect(pre='pfc+', post='Go+', synapses="sparse-random", mode='excitatory', delay=2.25,std=0.25)
 brain.connect(pre='pfc+', post='NoGo+', synapses="sparse-random", mode='excitatory', delay=2.25,std=0.25)
@@ -60,6 +69,17 @@ brain.connect(pre='pfc-', post='NoGo-', synapses="sparse-random", mode='excitato
 brain.connect(pre='Go+',post='gpi+', synapses='sparse-random', mode='inhibitory', delay=2.25, std=0.25)
 brain.connect(pre='Go-',post='gpi-', synapses='sparse-random', mode='inhibitory', delay=2.25, std=0.25)
 
+#ACTUALLY, we don't want Go populations to inhibit each other because that leads to one completely squashing out the other and having an 'unfair' advantage.
+
+#Go populations inhibit each other (slightly)
+#brain.connect(pre='Go+',post='Go-',synapses='sparse-random',mode='inhibitory')
+#brain.connect(pre='Go-',post='Go+',synapses='sparse-random',mode='inhibitory')
+
+#... and so do thalamic motor outputs...?
+#brain.connect(pre='thal+',post='thal-',synapses='sparse-random',mode='inhibitory')
+#brain.connect(pre='thal-',post='thal+',synapses='sparse-random',mode='inhibitory')
+
+
 #NoGo inhibits Gpe (disinhibited)
 brain.connect(pre='NoGo+',post='gpe+', synapses='sparse-random', mode='inhibitory', delay=2.25, std=0.25)
 brain.connect(pre='NoGo-',post='gpe-', synapses='sparse-random', mode='inhibitory', delay=2.25, std=0.25)
@@ -69,7 +89,7 @@ brain.disconnect(pre='NoGo-',post='gpe-')
 
 #GPe inhibits GPi
 brain.connect(pre='gpe+', post='gpi+', synapses="sparse-random", mode='inhibitory', delay=2.25,std=0.25)
-brain.connect(pre='gpe+', post='gpi-', synapses="sparse-random", mode='inhibitory', delay=2.25,std=0.25)
+brain.connect(pre='gpe-', post='gpi-', synapses="sparse-random", mode='inhibitory', delay=2.25,std=0.25)
 
 #GPi inhibits Thalamus (disinhibited)
 brain.connect(pre='gpi+', post='thal+', synapses="sparse-random", mode='inhibitory', delay=2.25,std=0.25)
@@ -96,19 +116,8 @@ brain.connect(pre='pfc_inhib', post='pfc-', synapses="sparse-random", mode='inhi
 #####
 #run the network for a goal of 10 seconds
 #####
-simTime = 10000
 
-#Suppose SNc constantly generating Dopamine and synapse connect to simulate 'bursting'
-snc_stim = [{'start':0,'stop':simTime,'mV':14,'neurons':[0]}]
-#GPe is tonically active
-gpe_stim = [{'start':0,'stop':simTime,'mV':14,'neurons':[0]}]
-#thalamus also receives sensory input -> in the future transition to environmental input from 3D world
-thal_stim = [{'start':0,'stop':10,'mV':14,'neurons':[i for i in range(5)]}]
-
-results1 = brain.simulate(experiment_name='Dopaminergic STDP Reinforcement Learning - no STDP',T=simTime, dt=0.125, I_ext={'thal_in':thal_stim,'gpe+':gpe_stim, 'gpe-':gpe_stim, 'snc':snc_stim}, save_data='/data/people/evjang/pyN_data/', properties_to_save=['psc','spike_raster','I_rec'],stdp=False)
-
-save_data(results1,'./')#save the plots -> analyze the plots separately.
-
-results2 = brain.simulate(experiment_name='Dopaminergic STDP Reinforcement Learning - with STDP',T=simTime, dt=0.125, I_ext={'thal_in':thal_stim,'gpe+':gpe_stim, 'gpe-':gpe_stim, 'snc':snc_stim}, save_data='/data/people/evjang/pyN_data/', properties_to_save=['psc','spike_raster','I_rec'],stdp=True)
-
-save_data(results2,'./')
+results1 = brain.simulate(experiment_name='modelock-nocrossinhib', T=100, dt=0.125, save_data='/Users/eric/Documents/College/CLPS1492/final/data/blender_data/', properties_to_save=['v','psc','spike_raster','I_rec'],stdp=True)
+save_data(results1,'./')
+#results2 = brain.simulate(experiment_name='modelock-nocrossinhib-longer', T=30000, dt=0.250, save_data='/data/people/evjang/pyN_data/', properties_to_save=['v','psc','spike_raster','I_rec'],stdp=True)
+#save_data(results2,'./')

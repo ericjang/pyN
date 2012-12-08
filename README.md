@@ -144,9 +144,9 @@ Note that it takes a fairly large number of repeated spike pairings for STDP wei
         <td>0.02</td>
         <td>0.25</td>
         <td>-50</td>
-        <td>d</td>
         <td>2</td>
         <td>-70</td>
+        <td></td>
     </tr>
     <tr>
         <td>Phasic Bursting</td>
