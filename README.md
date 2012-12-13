@@ -329,3 +329,7 @@ Note that it takes a fairly large number of repeated spike pairings for STDP wei
 
 #Other Notes:
   - Do NOT create a Population with the same name as another Population or it will be overwritten when adding it to a Network.
+
+#License
+
+pyN is licensed under BSD.

@@ -89,12 +89,11 @@ def save_data(params,path,interval=1):
         fig = plt.figure()
         plt.title(name + ' - ' + prop)
         if prop == 'spike_raster':
-          #trace = np.loadtxt(path + params['time_stamp'] + '-' + name + '-' + prop).reshape((-1,N))
-
+          trace = np.loadtxt(path + params['time_stamp'] + '-' + name + '-' + prop).reshape((-1,N))
           trace[trace == 0] = np.nan
           #scaling vector to separate out the dots from all = 1
           scale = np.array([k for k in range(trace.shape[1])])
-          #pdb.set_trace()
+          #pdb.set_trace()#check if the scale vector is way out of whack!
           plt.plot(time_trace[1:trace.shape[0]+1:interval], trace[::interval] * scale[np.newaxis,:][::interval],'.')
         elif prop == 'I_ext':
           if name in params['I_ext']:

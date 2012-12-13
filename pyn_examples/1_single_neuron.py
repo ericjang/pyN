@@ -9,4 +9,4 @@ brain = Network(populations=[single_neuron])
 stim = [{'start':10,'stop':100,'mV':14,'neurons':[0]}]
 results = brain.simulate(experiment_name='Single Neuron exhibiting tonic spiking',T=100,dt=0.25,integration_time=30,I_ext={'neuron':stim}, save_data='../data/', properties_to_save=['v','u','psc','I_ext','spike_raster'])
 #show_data(results)
-save_data(results,'../data/')
+save_plots(results,'./')

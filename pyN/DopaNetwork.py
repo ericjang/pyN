@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 try:
   import bge
+  import bpy
 except:
   pass
 
@@ -280,7 +281,9 @@ class DopaController(DopaNetwork):
         self.disconnect(pre='gpe',post='gpi')
         self.reconnect(pre='gpi',post=thal_out)
     elif mode=='Neutral':
-      #disconnect dopaminergic bursting...
+      #identical to "Go" mode, but disconnect dopaminergic bursting...
+      #Hopefully this allows exploration.
+      self.set_mode("Go")
       for i in range(1,7):
         go = "go_" + str(i)
         nogo = "nogo_" + str(i)
@@ -307,6 +310,16 @@ class DopaController(DopaNetwork):
       - touches poison
 
     """
+    tonic = [self.get('snc'),self.get('gpe')]
+
+    #unfortunately, this makes the network go nuts
+    if i < 11:#also provide some initial stimuli to network
+       for j in range(1,7):
+         tonic.append(self.get('thal_in_'+str(j)))
+
+    for tnc in tonic:
+      x = randint(0,tnc.N-10)
+      tnc.I_ext[x:x+9] += 20
 
     #print('applying actuators...')
     """
@@ -318,16 +331,24 @@ class DopaController(DopaNetwork):
     brain = scene.objects['brain']
     for t in range(1,7):
       thal_out = self.get("thal_out_" + str(t))
-      if np.sum(thal_out.spike_raster[:,i])/thal_out.N > 0.3:
+      if np.sum(thal_out.spike_raster[:,i])/thal_out.N > 0.5:
         #more than half the neurons are active, move the effector called "arm"+str(t)!
         arm = scene.objects['arm'+str(t)]
         opp_arm = scene.objects['arm'+str(7-t)]#it so happens that the arms mirror their complement so they add up to 7.
-        arm.localScale.x += 0.1
-        #shrink the other effector
-        opp_arm.localScale.x -= 0.1
-        #the sensor shell should naturally follow in the same direction!
-        print('moving arm%s' % str(t))
 
+        #we can only apply the growth/shrink if the opposite end has enough size to give, i.e. its bad if scale goes negative and it starts growing again.
+        #otherwise we get distortion effects and the animal ends up getting bigger.
+        if opp_arm.localScale.x > 0.05:
+          arm.localScale.x += 0.1
+          arm.localPosition.x += 0.1/2#because scale takes from center, we also move it this way
+          #shrink the other effector
+          opp_arm.localScale.x -= 0.1
+          opp_arm.localPosition.x -= 0.1/2
+          #the sensor shell should naturally follow in the same direction!
+          print('growing %s and shrinking %s' % (arm.name, opp_arm.name))
+          #bpy.ops.action.keyframe_insert(type='ALL')#insert keyframes
+        else:
+          print('print %s fully stretched, not applying mass shift!' % opp_arm.name)
 
 
 

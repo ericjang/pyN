@@ -117,7 +117,7 @@ brain.connect(pre='pfc_inhib', post='pfc-', synapses="sparse-random", mode='inhi
 #run the network for a goal of 10 seconds
 #####
 
-results1 = brain.simulate(experiment_name='modelock-nocrossinhib', T=100, dt=0.125, save_data='/Users/eric/Documents/College/CLPS1492/final/data/blender_data/', properties_to_save=['v','psc','spike_raster','I_rec'],stdp=True)
+results1 = brain.simulate(experiment_name='modelock-nocrossinhib', T=40, dt=0.125, save_data='/Users/eric/Documents/College/CLPS1492/final/data/blender_data/', properties_to_save=['v','psc','spike_raster','I_rec'],stdp=True)
 save_data(results1,'./')
 #results2 = brain.simulate(experiment_name='modelock-nocrossinhib-longer', T=30000, dt=0.250, save_data='/data/people/evjang/pyN_data/', properties_to_save=['v','psc','spike_raster','I_rec'],stdp=True)
 #save_data(results2,'./')
